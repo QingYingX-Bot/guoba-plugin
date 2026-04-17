@@ -126,3 +126,4 @@ dist
 /config/*
 /test/
 /server/static/preload
+/scripts/

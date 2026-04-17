@@ -56,6 +56,7 @@ export function supportGuoba () {
           // 【组件类型】，可参考
           // https://doc.vvbin.cn/components/introduction.html
           // https://3x.antdv.com/components/overview-cn/
+          // 以及新版锅巴兼容清单：guoba-plugin-web/GUOBA_SCHEMA_COMPONENTS.md
           component: 'Switch'
         },
         {
@@ -116,7 +117,7 @@ export function supportGuoba () {
           field: 'server.port',
           label: '监听端口号',
           helpMessage: '修改后需要重启才能生效',
-          bottomHelpMessage: '如果不想要端口号，请输入 80',
+          bottomHelpMessage: '如果不想要端口号，请输入 80。注意：开启下方「与 TRSS 共享端口」时本端口不生效，锅巴会复用 TRSS 主端口',
           component: 'InputNumber',
           required: true,
           componentProps: {
@@ -124,6 +125,13 @@ export function supportGuoba () {
             max: 65535,
             placeholder: '请输入监听端口号'
           }
+        },
+        {
+          field: 'server.helloTRSS',
+          label: '与 TRSS 共享端口',
+          helpMessage: '修改后需要重启才能生效',
+          bottomHelpMessage: '开启后锅巴不再独立监听端口，而是挂载到 TRSS 主服务（默认 2536）的 /guoba 路径下',
+          component: 'Switch'
         },
         {
           field: 'server.splicePort',

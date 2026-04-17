@@ -9,6 +9,7 @@ import {cfg, Constant, GuobaSupportMap, PluginsMap} from '#guoba.platform';
 import {BotActions} from '#guoba.utils'
 import {parsePluginsIndexByLocal, parseReadmeLink} from '../../helper/pluginsIndex.js'
 import {getPluginIconPath, parseShowInMenu} from '../../utils/pluginUtils.js'
+import {serializeGuobaSchemas} from '../../utils/schemaCompat.js'
 
 export default class IPluginService extends Service {
   constructor(app) {
@@ -61,9 +62,21 @@ export default class IPluginService extends Service {
       }
       // 判断是否支持配置项
       let {configInfo} = supportObject
-      if (configInfo && configInfo.schemas && typeof configInfo.getConfigData === 'function') {
+      let schemaGroups = Array.isArray(configInfo?.schemaGroups)
+        ? serializeGuobaSchemas(configInfo.schemaGroups)
+        : undefined
+      let schemas = Array.isArray(configInfo?.schemas)
+        ? serializeGuobaSchemas(configInfo.schemas)
+        : undefined
+
+      if (
+        configInfo
+        && (schemas?.length > 0 || schemaGroups?.length > 0)
+        && typeof configInfo.getConfigData === 'function'
+      ) {
         plugin.hasConfig = true
-        plugin.schemas = configInfo.schemas
+        plugin.schemaGroups = schemaGroups
+        plugin.schemas = schemas
         plugin.showInMenu = parseShowInMenu(supportObject)
       }
     }
