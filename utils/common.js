@@ -73,9 +73,7 @@ async function replyPrivate(userId, msg) {
 export async function getAllWebAddress() {
   const {splicePort, helloTRSS} = cfg.get('server')
   let host = cfg.serverHost
-  let port = cfg.serverPort
-  port = splicePort ? Number.parseInt(port) : null
-  port = port === 80 ? null : port
+  const port = getServerPort(splicePort)
   let custom = []
   if (isTRSS && helloTRSS) {
     const server = (await import('../../../lib/config/config.js')).default.server
@@ -109,9 +107,9 @@ export async function getAllWebAddress() {
   return {custom, local, remote}
 }
 
-// 拼接端口号和http前缀
+// 拼接端口号和协议前缀
 function joinHttpPort(ip, port) {
-  ip = /^http/.test(ip) ? ip : 'http://' + ip
+  ip = /^https?:\/\//i.test(ip) ? ip : getServerProtocol() + '://' + ip
   return `${ip}${port ? ':' + port : ''}`
 }
 
@@ -122,9 +120,7 @@ function joinHttpPort(ip, port) {
 export function getWebAddress(allIp = false) {
   const {splicePort} = cfg.get('server')
   let host = cfg.serverHost
-  let port = cfg.serverPort
-  port = splicePort ? Number.parseInt(port) : null
-  port = port === 80 ? null : port
+  const port = getServerPort(splicePort)
   let hosts = []
   if (host === 'auto') {
     hosts.push(...getAutoIps(port, allIp))
@@ -136,7 +132,7 @@ export function getWebAddress(allIp = false) {
       if (item === 'auto') {
         hosts.push(...getAutoIps(port, allIp))
       } else {
-        item = /^http/.test(item) ? item : 'http://' + item
+        item = /^https?:\/\//i.test(item) ? item : getServerProtocol() + '://' + item
         hosts.push(`${item}${port ? ':' + port : ''}`)
       }
     }
@@ -155,10 +151,33 @@ function getAutoIps(port, allIp) {
     ips.push(`localhost${port ? ':' + port : ''}`)
   }
   if (allIp) {
-    return ips.map(ip => `http://${ip}`)
+    return ips.map(ip => `${getServerProtocol()}://${ip}`)
   } else {
-    return [`http://${ips[0]}`]
+    return [`${getServerProtocol()}://${ips[0]}`]
   }
+}
+
+function getServerProtocol() {
+  const {helloTRSS, ssl} = cfg.get('server')
+  if (isTRSS && helloTRSS) {
+    return 'http'
+  }
+  return ssl?.enable ? 'https' : 'http'
+}
+
+function getServerPort(splicePort) {
+  if (!splicePort) {
+    return null
+  }
+  const port = Number.parseInt(cfg.serverPort)
+  const protocol = getServerProtocol()
+  if (protocol === 'http' && port === 80) {
+    return null
+  }
+  if (protocol === 'https' && port === 443) {
+    return null
+  }
+  return port
 }
 
 /**

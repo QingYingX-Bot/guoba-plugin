@@ -68,6 +68,24 @@ npm install express multer body-parser jsonwebtoken
 
 如果访问不到，请发送`#锅巴帮助`指令获取帮助。
 
+### HTTPS/SSL
+
+如需让锅巴直接提供 HTTPS 访问，可在 `plugins/Guoba-Plugin/config/application.yaml` 中开启：
+
+```yaml
+server:
+  ssl:
+    enable: true
+    keyPath: certs/privkey.pem
+    certPath: certs/fullchain.pem
+    caPath: ""
+    passphrase: ""
+```
+
+证书路径支持绝对路径，也支持相对云崽根目录。修改后需要重启锅巴。
+
+> 注：如果开启了“与 TRSS 共享端口”，锅巴会复用 TRSS 的服务，此处 SSL 配置不会接管监听端口，请在 TRSS 或反向代理中配置 HTTPS。
+
 ## 更新插件
 
 一般会自动更新，如需手动更新，请发送`#锅巴更新`指令

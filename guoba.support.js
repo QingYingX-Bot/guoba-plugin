@@ -134,6 +134,57 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          label: 'HTTPS/SSL 配置',
+          component: 'SOFT_GROUP_BEGIN'
+        },
+        {
+          field: 'server.ssl.enable',
+          label: '启用 HTTPS',
+          helpMessage: '修改后需要重启才能生效',
+          bottomHelpMessage: '开启后锅巴将使用 HTTPS 监听；如果开启了“与 TRSS 共享端口”，请在 TRSS 或反向代理中配置 HTTPS',
+          component: 'Switch'
+        },
+        {
+          field: 'server.ssl.keyPath',
+          label: '私钥文件路径',
+          helpMessage: '修改后需要重启才能生效',
+          bottomHelpMessage: '支持绝对路径或相对云崽根目录，例如 certs/privkey.pem',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 SSL 私钥文件路径'
+          }
+        },
+        {
+          field: 'server.ssl.certPath',
+          label: '证书文件路径',
+          helpMessage: '修改后需要重启才能生效',
+          bottomHelpMessage: '支持绝对路径或相对云崽根目录，例如 certs/fullchain.pem',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 SSL 证书文件路径'
+          }
+        },
+        {
+          field: 'server.ssl.caPath',
+          label: 'CA 证书链路径',
+          helpMessage: '修改后需要重启才能生效',
+          bottomHelpMessage: '可选；需要单独配置 CA 证书链时填写',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 CA 证书链路径（可选）'
+          }
+        },
+        {
+          field: 'server.ssl.passphrase',
+          label: '私钥密码',
+          helpMessage: '修改后需要重启才能生效',
+          bottomHelpMessage: '可选；私钥没有密码时留空',
+          component: 'InputPassword',
+          componentProps: {
+            placeholder: '请输入私钥密码（可选）'
+          }
+        },
+        {
           field: 'server.splicePort',
           label: '拼接端口号',
           bottomHelpMessage: '是否需要在服务器地址后拼接端口号',

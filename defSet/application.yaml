@@ -28,6 +28,18 @@ server:
   ICPNo: ''
   # 是否整合trss，若开启则会和trss共享端口号，并且默认挂载到 /guoba 路径下
   helloTRSS: true
+  # HTTPS/SSL 配置（开启后需要重启）
+  ssl:
+    # 是否启用 HTTPS 监听
+    enable: false
+    # SSL 私钥文件路径，支持绝对路径或相对云崽根目录
+    keyPath: ""
+    # SSL 证书文件路径，支持绝对路径或相对云崽根目录
+    certPath: ""
+    # CA 证书链文件路径，可选
+    caPath: ""
+    # 私钥密码，可选
+    passphrase: ""
 
 # jwt配置
 jwt:
