@@ -1,7 +1,5 @@
 import {autowired, Result} from '#guoba.framework'
-import {ApiController, cfg} from '#guoba.platform'
-
-const RedisDecorator = await Guoba.GID('#/decorator/RedisDecorator.js')
+import {ApiController} from '#guoba.platform'
 
 /**
  * 工具类Controller
@@ -17,10 +15,6 @@ export default class HelperController extends ApiController {
   registerRouters() {
     // 中转请求，绕过跨域和防盗链
     this.all('/transit', this.transitRequest)
-    // 获取天气信息（缓存6小时）
-    this.get('/city_weather', this.getCityWeather, [
-      new RedisDecorator('city_weather:${config.getCity()}', {EX: 60 * 60 * 6, getCity: this.getCity}),
-    ])
     // 本地尝试释放端口
     // 假设用户关闭yunzai时，没有关干净，导致端口号被异常占用
     // 此时另一方启动的锅巴可以尝试调用此接口，来关闭当前的端口占用
@@ -30,23 +24,6 @@ export default class HelperController extends ApiController {
 
   transitRequest(req, res) {
     return this.helperService.transitRequest(req, res)
-  }
-
-  getCity() {
-    return cfg.get('base.city')
-  }
-
-  async getCityWeather() {
-    try {
-      let city = this.getCity()
-      return Result.ok({
-        weather: await this.helperService.getWeather(city),
-      })
-    } catch (e) {
-      logger.error(e)
-      let msg = e.message || e
-      return Result.error(msg)
-    }
   }
 
   tryReleasePort(req) {

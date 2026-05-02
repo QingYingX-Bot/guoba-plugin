@@ -1,0 +1,1 @@
+import"./vue.runtime.esm-bundler-Cn9skj67.js";import"./useConfigInject-BsY3UyrB.js";import{n as e,t}from"./divider-BIfIlWuw.js";export{e as default,t as dividerProps};

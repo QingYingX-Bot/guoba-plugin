@@ -4,6 +4,7 @@ import path from 'path'
 import lodash from 'lodash'
 import fetch from 'node-fetch'
 import {exec} from 'child_process'
+import loader from '../../../../../lib/plugins/loader.js'
 import {Service} from '#guoba.framework';
 import {cfg, Constant, GuobaSupportMap, PluginsMap} from '#guoba.platform';
 import {applyGithubProxy, BotActions} from '#guoba.utils'
@@ -14,6 +15,7 @@ import {serializeGuobaSchemas} from '../../utils/schemaCompat.js'
 export default class IPluginService extends Service {
   constructor(app) {
     super(app)
+    this.ruleModuleFileCache = new Map()
     // 获取插件列表，填充GuobaSupportMap
     this.loadPlugining = this.getPlugins()
   }
@@ -90,6 +92,176 @@ export default class IPluginService extends Service {
       }
       return 0
     })
+  }
+
+  /**
+   * 获取 Yunzai 当前运行时已加载的功能规则。
+   * 只读收集，不修改 loader 或运行时规则。
+   * @return {Array<object>}
+   */
+  getPluginRules() {
+    const items = Array.isArray(loader.priority) ? loader.priority : []
+    const rules = []
+
+    for (const item of items) {
+      const pluginRules = Array.isArray(item?.plugin?.rule) ? item.plugin.rule : []
+      const pluginKey = String(item?.key || '')
+      const keyParts = pluginKey.split(/[\\/]/).filter(Boolean)
+      const pluginFolder = keyParts[0] || pluginKey || item?.name || ''
+      const pluginMeta = this.getRulePluginMeta(pluginFolder)
+      const pluginName = pluginMeta.packageName
+      const className = String(item?.class?.name || '')
+      const moduleFile = this.resolveRuleModuleFile(pluginFolder, keyParts.slice(1).join('/'), className)
+      const moduleName = moduleFile.replace(/\.js$/i, '')
+      const instanceName = String(item?.plugin?.name || item?.name || '')
+      const instanceDsc = String(item?.plugin?.dsc || '')
+      const priority = Number(item?.priority ?? item?.plugin?.priority ?? 0)
+
+      pluginRules.forEach((rule, index) => {
+        const functionName = String(rule?.fnc || '')
+        rules.push({
+          key: `${pluginFolder}:${moduleFile}:${instanceName}:${functionName || index}:${index}`,
+          pluginFolder,
+          pluginName,
+          pluginPackageName: pluginName,
+          pluginKey,
+          pluginTitle: pluginName,
+          pluginDescription: pluginMeta.description,
+          className,
+          moduleFile,
+          moduleName,
+          instanceName,
+          instanceDsc,
+          ruleIndex: index,
+          name: rule?.name || functionName || instanceName,
+          functionName,
+          event: rule?.event || item?.plugin?.event || 'message',
+          permission: rule?.permission || '',
+          priority,
+          reg: this.stringifyRuleReg(rule?.reg),
+          log: rule?.log !== false,
+        })
+      })
+    }
+
+    return rules.sort((a, b) => {
+      const sourceCompare = `${a.pluginName}/${a.moduleFile}/${a.instanceName}`
+        .localeCompare(`${b.pluginName}/${b.moduleFile}/${b.instanceName}`)
+      if (sourceCompare !== 0) {
+        return sourceCompare
+      }
+      if (a.priority !== b.priority) {
+        return a.priority - b.priority
+      }
+      return a.ruleIndex - b.ruleIndex
+    })
+  }
+
+  resolveRuleModuleFile(pluginFolder, keyModuleFile, className) {
+    if (keyModuleFile) {
+      return keyModuleFile.replaceAll('\\', '/')
+    }
+    if (!pluginFolder || !className || !this.pluginsPath) {
+      return 'index.js'
+    }
+
+    const cacheKey = `${pluginFolder}:${className}`
+    if (this.ruleModuleFileCache.has(cacheKey)) {
+      return this.ruleModuleFileCache.get(cacheKey)
+    }
+
+    const pluginPath = path.join(this.pluginsPath, pluginFolder)
+    const files = this.getRuleModuleFiles(pluginPath)
+    const classReg = new RegExp(`(?:export\\s+)?class\\s+${this.escapeRegExp(className)}\\b`)
+
+    for (const file of files) {
+      try {
+        const filePath = path.join(pluginPath, file)
+        const content = fs.readFileSync(filePath, 'utf8')
+        if (classReg.test(content)) {
+          this.ruleModuleFileCache.set(cacheKey, file)
+          return file
+        }
+      } catch (error) {
+        logger.debug?.(`[Guoba] 读取规则文件 ${file} 失败：${error.message}`)
+      }
+    }
+
+    this.ruleModuleFileCache.set(cacheKey, 'index.js')
+    return 'index.js'
+  }
+
+  getRuleModuleFiles(pluginPath, basePath = '', depth = 0) {
+    if (!pluginPath || !fs.existsSync(pluginPath) || depth > 4) {
+      return []
+    }
+
+    const ignoredDirs = new Set([
+      '.git',
+      'data',
+      'guoba-plugin-web',
+      'node_modules',
+      'resources',
+      'server/static',
+    ])
+    const files = []
+
+    for (const entry of fs.readdirSync(path.join(pluginPath, basePath), {withFileTypes: true})) {
+      const relativePath = path.join(basePath, entry.name).replaceAll('\\', '/')
+      if (entry.isDirectory()) {
+        if (ignoredDirs.has(entry.name) || ignoredDirs.has(relativePath)) {
+          continue
+        }
+        files.push(...this.getRuleModuleFiles(pluginPath, relativePath, depth + 1))
+        continue
+      }
+      if (entry.isFile() && entry.name.endsWith('.js')) {
+        files.push(relativePath)
+      }
+    }
+
+    return files
+  }
+
+  escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
+  getRulePluginMeta(pluginFolder) {
+    const fallback = {
+      description: '',
+      packageName: pluginFolder || 'unknown',
+    }
+    if (!pluginFolder || !this.pluginsPath) {
+      return fallback
+    }
+    const packagePath = path.join(this.pluginsPath, pluginFolder, 'package.json')
+    if (!fs.existsSync(packagePath)) {
+      return fallback
+    }
+    try {
+      const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
+      return {
+        description: String(pkg.description || ''),
+        packageName: String(pkg.name || pluginFolder),
+      }
+    } catch (error) {
+      logger.warn(`[Guoba] 读取插件 ${pluginFolder} package.json 失败：${error.message}`)
+      return fallback
+    }
+  }
+
+  stringifyRuleReg(reg) {
+    if (reg instanceof RegExp) {
+      return reg.toString()
+    }
+    if (typeof reg === 'string') {
+      return reg
+    }
+    if (reg == null) {
+      return ''
+    }
+    return String(reg)
   }
 
   /**
@@ -268,6 +440,52 @@ export default class IPluginService extends Service {
     }
 
     return {logs, status: 'success', message: `插件 ${name} 安装成功`};
+  }
+
+  /**
+   * 批量安装插件
+   * @param {string[]} links 插件 Git 地址列表
+   * @param autoRestart 是否安装后自动重启
+   * @param autoNpmInstall 是否自动安装依赖
+   * @param packageManager 包管理器
+   * @return {Promise<{logs: string[], message: string, status: string}>}
+   */
+  async installPluginBatch(links, autoRestart = true, autoNpmInstall = true, packageManager = 'pnpm') {
+    const logs = []
+    const messages = []
+    let successCount = 0
+    let errorCount = 0
+
+    for (const link of links) {
+      const name = link.split('/').pop().replace(/\.git$/, '')
+      const result = await this.installPlugin(link, false, autoNpmInstall, packageManager)
+      if (result.status === 'success') {
+        successCount++
+      } else {
+        errorCount++
+      }
+      messages.push(result.message)
+      logs.push([
+        `========== ${name} ==========`,
+        ...(result.logs || []),
+        result.message,
+      ].filter(Boolean).join('\n'))
+    }
+
+    if (autoRestart && successCount > 0) {
+      logs.push('重启：批量安装完成，已触发自动重启')
+      BotActions.doRestart()
+    } else if (autoRestart) {
+      logs.push('重启：没有成功安装的插件，已跳过自动重启')
+    } else {
+      logs.push('重启：已关闭自动重启')
+    }
+
+    return {
+      logs,
+      status: errorCount > 0 ? 'error' : 'success',
+      message: `批量安装完成：成功 ${successCount} 个，失败 ${errorCount} 个\n${messages.join('\n')}`,
+    }
   }
 
   getInstallCommand(pluginPath, packageManager = 'pnpm') {

@@ -12,11 +12,15 @@ export default class PluginController extends ApiController {
   registerRouters() {
     // 获取plugin列表
     this.get('/list', this.getPlugins)
+    // 获取已加载功能规则列表
+    this.get('/rules', this.getPluginRules)
     // 获取plugin readme
     this.get('/readme', this.getPluginReadme)
 
     // 安装plugin
     this.put('/install', this.installPlugin)
+    // 批量安装plugin
+    this.put('/install-batch', this.installPluginBatch)
     // 卸载plugin
     this.put('/uninstall', this.uninstallPlugin)
 
@@ -43,6 +47,11 @@ export default class PluginController extends ApiController {
     return Result.ok(data)
   }
 
+  async getPluginRules() {
+    let data = this.pluginService.getPluginRules()
+    return Result.ok(data)
+  }
+
   async getPluginReadme(req) {
     let {link, force} = req.query
     force = force === 'true'
@@ -56,6 +65,19 @@ export default class PluginController extends ApiController {
       return Result.error('link不能为空')
     }
     let text = await this.pluginService.installPlugin(link, autoRestart, autoNpmInstall, packageManager)
+    return Result.ok(text)
+  }
+
+  async installPluginBatch(req) {
+    let {links, autoRestart = true, autoNpmInstall = true, packageManager = 'pnpm'} = req.body
+    if (!Array.isArray(links)) {
+      links = String(links || '').split(',')
+    }
+    links = links.map(link => link?.toString?.()?.trim?.()).filter(Boolean)
+    if (links.length === 0) {
+      return Result.error('links不能为空')
+    }
+    let text = await this.pluginService.installPluginBatch(links, autoRestart, autoNpmInstall, packageManager)
     return Result.ok(text)
   }
 

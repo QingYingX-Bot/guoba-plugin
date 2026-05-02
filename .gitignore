@@ -119,11 +119,13 @@ dist
 .pnp.*
 /.idea/
 
-# Guoba Ingored
+# Guoba ignored
 /data/*
 /lib/test.js
 /lib/v2-js/*
 /config/*
 /test/
 /server/static/preload
-/scripts/
+/scripts/*
+!/scripts/maintenance/
+!/scripts/maintenance/*.mjs

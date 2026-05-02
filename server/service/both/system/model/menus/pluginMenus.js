@@ -1,32 +1,58 @@
 import {GuobaSupportMap, PluginsMap} from '#guoba.platform'
 import {getPluginIconPath, parseShowInMenu} from '../../../../../utils/pluginUtils.js'
 
-const pluginsStoreMenu = {
+const pluginsLegacyMenu = {
   path: '/plugins',
-  name: 'PluginsStore',
+  name: 'PluginsLegacy',
   component: '/guoba/plugins/index',
+  redirect: '/plugins/market',
   meta: {
     title: '插件管理',
-    // icon: 'uil:store',
     icon: 'clarity:plugin-line',
+    hideMenu: true,
   },
 }
 
-const pluginsIndexMenu = {
-  path: '/plugins/index',
-  name: 'PluginsIndex',
+const pluginsMarketMenu = {
+  path: '/plugins/market',
+  name: 'PluginsMarket',
   component: '/guoba/plugins/index',
   meta: {
-    title: '插件列表',
-    icon: 'ic:round-view-list',
+    title: '插件市场',
+    icon: 'lucide:store',
   },
+}
+
+const pluginRulesMenu = {
+  path: '/plugins/rules',
+  name: 'PluginRules',
+  component: '/guoba/plugins/rules/index',
+  redirect: '/plugins/rules/@/all',
+  meta: {
+    title: '功能规则',
+    icon: 'lucide:list-checks',
+  },
+  children: [],
 }
 
 // 插件的菜单
 // noinspection JSUnusedGlobalSymbols
 export async function usePluginsMenu() {
   const pluginMenus = []
+  const pluginRuleMenus = []
   let miaoPluginDetailMenu = null
+
+  pluginRuleMenus.push({
+    path: '/plugins/rules/@/all',
+    name: 'PluginRules_All',
+    component: '/guoba/plugins/rules/index',
+    meta: {
+      title: '全部插件',
+      icon: 'lucide:list-checks',
+      ignoreRoute: true,
+    },
+  })
+
   // 遍历所有插件
   GuobaSupportMap.forEach((value, name) => {
     if (!parseShowInMenu(value)) {
@@ -63,6 +89,38 @@ export async function usePluginsMenu() {
     pluginMenus.push(detailMenu)
   })
 
+  Array.from(PluginsMap.values())
+    .map((plugin) => plugin?.name)
+    .filter(Boolean)
+    .sort((a, b) => String(a).localeCompare(String(b)))
+    .forEach((name) => {
+      pluginRuleMenus.push({
+        path: `/plugins/rules/@/${encodeURIComponent(name)}`,
+        name: `PluginRules_${String(name).replaceAll(/[^a-zA-Z0-9_]/g, '_')}`,
+        component: '/guoba/plugins/rules/index',
+        meta: {
+          title: name,
+          icon: 'lucide:file-check-2',
+          ignoreRoute: true,
+        },
+      })
+    })
+
+  pluginRuleMenus.push({
+    path: '/plugins/rules/@/:name',
+    name: 'PluginRules_Detail',
+    component: '/guoba/plugins/rules/index',
+    meta: {
+      title: '功能规则',
+      hideMenu: true,
+    },
+  })
+
+  const pluginRulesGroupMenu = {
+    ...pluginRulesMenu,
+    children: pluginRuleMenus,
+  }
+
   // 喵喵插件额外功能
   const miaoExtraMenus = await useMiaoPluginMenu()
   if (miaoPluginDetailMenu && miaoExtraMenus.length > 0) {
@@ -88,7 +146,9 @@ export async function usePluginsMenu() {
 
   if (pluginMenus.length > 0) {
     return [
-      pluginsStoreMenu,
+      pluginsLegacyMenu,
+      pluginsMarketMenu,
+      pluginRulesGroupMenu,
       {
         path: '/plugin/@',
         name: 'PluginDetailParent',
@@ -100,15 +160,18 @@ export async function usePluginsMenu() {
           icon: 'ion:settings-outline',
         },
         // 重定向到
-        redirect: pluginsIndexMenu.path,
+        redirect: pluginMenus[0]?.path ?? pluginsMarketMenu.path,
         children: [
-          // pluginsIndexMenu,
           ...pluginMenus,
         ],
       }
     ]
   } else {
-    return [pluginsStoreMenu]
+    return [
+      pluginsLegacyMenu,
+      pluginsMarketMenu,
+      pluginRulesGroupMenu,
+    ]
   }
 }
 

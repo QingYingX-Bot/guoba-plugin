@@ -11,6 +11,8 @@
 - 当前版本：`1.0.1`
 - 更新日期：`2026-04-05`
 - 更新日志：[CHANGELOG](./CHANGELOG.md)
+- 项目结构：[PROJECT_STRUCTURE](./docs/PROJECT_STRUCTURE.md)
+- Issue 进度：[ISSUE_PROGRESS](./docs/ISSUE_PROGRESS.md)
 
 ### 本次更新
 
@@ -89,6 +91,18 @@ server:
 ## 更新插件
 
 一般会自动更新，如需手动更新，请发送`#锅巴更新`指令
+
+## 项目结构
+
+锅巴插件本体保留了 Yunzai 插件常见入口和运行目录：
+
+- `index.js`、`main.js`、`guoba.support.js` 是运行入口或锅巴配置入口，不建议移动。
+- `apps/` 放聊天侧指令，`server/` 放管理面板后端，`utils/` 和 `models/` 提供通用工具与聚合导出。
+- `defSet/` 是默认配置模板，`config/` 是本地运行配置。
+- `server/static/` 是前端构建产物；前端源码在独立仓库 `guoba-plugin-web/` 中。
+- `resources/images/` 放图片资源，`docs/` 放维护文档和 issue 进度。
+
+更完整的目录说明见：[docs/PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)。
 
 # 功能预览
 

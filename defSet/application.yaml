@@ -1,10 +1,6 @@
 # 基础设置
 base:
-  # 获取天气的城市
-  city: 北京
   guide: true
-  # 是否要自动检查更新
-  checkUpdate: true
   # 是否允许群聊登录
   loginInGroup: false
   # 是否只发送自定义地址
