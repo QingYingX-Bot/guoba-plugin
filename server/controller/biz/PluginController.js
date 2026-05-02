@@ -51,11 +51,11 @@ export default class PluginController extends ApiController {
   }
 
   async installPlugin(req) {
-    let {link, autoRestart = true, autoNpmInstall = true} = req.body
+    let {link, autoRestart = true, autoNpmInstall = true, packageManager = 'pnpm'} = req.body
     if (!link) {
       return Result.error('link不能为空')
     }
-    let text = await this.pluginService.installPlugin(link, autoRestart, autoNpmInstall)
+    let text = await this.pluginService.installPlugin(link, autoRestart, autoNpmInstall, packageManager)
     return Result.ok(text)
   }
 

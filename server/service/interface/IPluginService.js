@@ -219,50 +219,97 @@ export default class IPluginService extends Service {
    * @param link 插件链接
    * @param autoRestart 是否自动重启
    * @param autoNpmInstall 是否自动安装依赖
-   * @return {Promise<{message: string, status: string}>}
+   * @param packageManager 包管理器
+   * @return {Promise<{logs: string[], message: string, status: string}>}
    */
-  async installPlugin(link, autoRestart, autoNpmInstall) {
+  async installPlugin(link, autoRestart, autoNpmInstall, packageManager = 'pnpm') {
     await this.initBotMethods();
     const name = link.split('/').pop().replace(/\.git$/, '');
     const pluginPath = `plugins/${name}`;
+    const logs = []
 
     if (await Bot.fsStat(pluginPath)) {
-      return {status: 'error', message: `插件 ${name} 已安装`};
+      return {logs, status: 'error', message: `插件 ${name} 已安装`};
     }
 
-    const githubReverseProxy = cfg.get('base.githubReverseProxy')
-    let githubProxyUrl = cfg.get('base.githubProxyUrl')
+    const cloneUrl = applyGithubProxy(link)
 
-    if (githubProxyUrl && !githubProxyUrl.endsWith('/')) {
-      githubProxyUrl += '/'
-    }
-
-    const isGithubRepo = /github\.com/.test(link)
-
-    const cloneUrl = isGithubRepo && githubReverseProxy && githubProxyUrl
-      ? `${githubProxyUrl}${link}`
-      : link;
-
-    let result = await Bot.exec(`git clone --depth 1 --single-branch ${cloneUrl} "${pluginPath}"`);
+    let result = await Bot.exec(`git clone --depth 1 --single-branch "${cloneUrl}" "${pluginPath}"`);
+    logs.push(this.formatExecLog('克隆插件', result))
 
     if (result.error) {
       logger.error(`[Guoba] 插件安装失败：${result.error}`);
-      return {status: 'error', message: `插件 ${name} 安装失败\n${result.error}`};
+      return {logs, status: 'error', message: `插件 ${name} 安装失败\n${result.error}`};
     }
 
     if (autoNpmInstall && await Bot.fsStat(`${pluginPath}/package.json`)) {
-      result = await Bot.exec(`cd ${pluginPath} && pnpm install`);
-      if (result.error) {
-        logger.error(`[Guoba] 插件安装失败：${result.error}`);
-        return {status: 'error', message: `插件安装失败：${result.error}`};
+      const installCommand = this.getInstallCommand(pluginPath, packageManager)
+      if (installCommand) {
+        const installResult = await Bot.exec(installCommand);
+        logs.push(this.formatExecLog('安装依赖', installResult))
+        if (installResult.error) {
+          logger.error(`[Guoba] 插件安装失败：${installResult.error}`);
+          return {logs, status: 'error', message: `插件安装失败：${installResult.error}`};
+        }
+      } else {
+        logs.push('安装依赖：已跳过')
       }
+    } else if (autoNpmInstall) {
+      logs.push('安装依赖：未发现 package.json，已跳过')
+    } else {
+      logs.push('安装依赖：已关闭自动安装')
     }
 
     if (autoRestart) {
+      logs.push('重启：已触发自动重启')
       BotActions.doRestart();
+    } else {
+      logs.push('重启：已关闭自动重启')
     }
 
-    return {status: 'success', message: `插件 ${name} 安装成功`};
+    return {logs, status: 'success', message: `插件 ${name} 安装成功`};
+  }
+
+  getInstallCommand(pluginPath, packageManager = 'pnpm') {
+    packageManager = String(packageManager || 'pnpm').trim().toLowerCase()
+    if (packageManager === 'none') {
+      return ''
+    }
+    if (packageManager === 'auto') {
+      if (fs.existsSync(path.join(pluginPath, 'pnpm-lock.yaml'))) {
+        packageManager = 'pnpm'
+      } else if (fs.existsSync(path.join(pluginPath, 'yarn.lock'))) {
+        packageManager = 'yarn'
+      } else if (fs.existsSync(path.join(pluginPath, 'bun.lockb')) || fs.existsSync(path.join(pluginPath, 'bun.lock'))) {
+        packageManager = 'bun'
+      } else if (fs.existsSync(path.join(pluginPath, 'package-lock.json'))) {
+        packageManager = 'npm'
+      } else {
+        packageManager = 'pnpm'
+      }
+    }
+    const commands = {
+      bun: 'bun install',
+      npm: 'npm install',
+      pnpm: 'pnpm install',
+      yarn: 'yarn install',
+    }
+    const command = commands[packageManager] || commands.pnpm
+    return `cd "${pluginPath}" && ${command}`
+  }
+
+  formatExecLog(title, result = {}) {
+    const lines = [`${title}：${result.error ? '失败' : '完成'}`]
+    if (result.stdout) {
+      lines.push(String(result.stdout).trim())
+    }
+    if (result.stderr) {
+      lines.push(String(result.stderr).trim())
+    }
+    if (result.error) {
+      lines.push(String(result.error?.stack || result.error?.message || result.error).trim())
+    }
+    return lines.filter(Boolean).join('\n')
   }
 
   async uninstallPlugin(name, autoRestart = true) {
