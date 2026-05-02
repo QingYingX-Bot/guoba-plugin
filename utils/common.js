@@ -29,6 +29,59 @@ export function toPairsMap(arg) {
   return obj
 }
 
+/** 获取启用后的 GitHub 代理前缀 */
+export function getGithubProxyUrl() {
+  if (cfg.get('base.githubReverseProxy') !== true) {
+    return ''
+  }
+  let proxyUrl = String(cfg.get('base.githubProxyUrl') || '').trim()
+  if (!proxyUrl) {
+    return ''
+  }
+  if (proxyUrl.includes('{url}')) {
+    return proxyUrl
+  }
+  return proxyUrl.endsWith('/') ? proxyUrl : proxyUrl + '/'
+}
+
+/** 判断是否为 GitHub 相关 URL */
+export function isGithubUrl(url) {
+  url = String(url || '').trim()
+  if (!url) {
+    return false
+  }
+  if (/^git@github\.com:/i.test(url)) {
+    return true
+  }
+  try {
+    const {hostname} = new URL(url)
+    return hostname === 'github.com'
+      || hostname.endsWith('.github.com')
+      || hostname === 'raw.githubusercontent.com'
+      || hostname.endsWith('.githubusercontent.com')
+  } catch {
+    return false
+  }
+}
+
+/** 应用锅巴全局 GitHub 代理配置 */
+export function applyGithubProxy(url) {
+  url = String(url || '').trim()
+  if (!url || !isGithubUrl(url)) {
+    return url
+  }
+  const proxyUrl = getGithubProxyUrl()
+  if (!proxyUrl || url.startsWith(proxyUrl)) {
+    return url
+  }
+  if (/^git@github\.com:/i.test(url)) {
+    url = url.replace(/^git@github\.com:/i, 'https://github.com/')
+  }
+  return proxyUrl.includes('{url}')
+    ? proxyUrl.replaceAll('{url}', url)
+    : proxyUrl + url
+}
+
 async function getMasterQQ() {
   if (isV3 || isV4) {
     return (await import( '../../../lib/config/config.js')).default.masterQQ

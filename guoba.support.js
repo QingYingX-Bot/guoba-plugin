@@ -68,13 +68,13 @@ export function supportGuoba () {
         {
           field: 'base.githubReverseProxy',
           label: 'Github反代',
-          bottomHelpMessage: '安装插件时是否使用Github反代',
+          bottomHelpMessage: '是否启用锅巴全局 GitHub 代理，影响插件安装、README 获取等 GitHub 链接',
           component: 'Switch'
         },
         {
           field: 'base.githubProxyUrl',
           label: 'Github反代地址',
-          bottomHelpMessage: 'Github反代地址，例如：https://ghproxy.com',
+          bottomHelpMessage: 'Github反代地址，例如：https://ghproxy.com，也支持包含 {url} 的模板地址',
           component: 'Input',
           componentProps: {
             placeholder: '请输入Github反代地址'

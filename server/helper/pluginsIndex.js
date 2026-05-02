@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
-import {GitUtils} from '#guoba.utils'
+import {applyGithubProxy, GitUtils} from '#guoba.utils'
 import {_paths} from '#guoba.platform'
 
 /**
@@ -52,7 +52,7 @@ export async function parsePluginsIndexByRaw() {
   for (let i = 0; i < urls.length; i++) {
     let url = urls[i]
     try {
-      response = await fetch(url)
+      response = await fetch(applyGithubProxy(url))
       if (!response.ok) {
         throw new Error(response.statusText)
       }
@@ -68,7 +68,7 @@ export async function parsePluginsIndexByRaw() {
       // 获取失败
       if (i === 0) {
         logger.warn(`[Guoba] 远程插件列表获取失败（${e.message}），尝试使用第${i + 1}个备用地址获取……`)
-      } else if (i === url.length - 1) {
+      } else if (i === urls.length - 1) {
         logger.error(`[Guoba] 远程插件列表获取失败，所有备用地址均已失效……`)
         return {}
       } else {
@@ -218,7 +218,7 @@ export function parseReadmeLink(text, baseUrl) {
   let fn = ($0, $1) => {
     let url = ''
     if (checkUrl($1)) {
-      url = `${_paths.server.realMountPrefix}/api/helper/transit?url=${encodeURIComponent($1)}`
+      url = `${_paths.server.realMountPrefix}/api/helper/transit?url=${encodeURIComponent(applyGithubProxy($1))}`
       return $0.replace($1, url)
     }
     if (/^https?/i.test($1)) {
@@ -226,7 +226,7 @@ export function parseReadmeLink(text, baseUrl) {
     }
     url = `${baseUrl}/${$1.replace(/^\//, '')}`
     if (checkUrl(url)) {
-      url = `${_paths.server.realMountPrefix}/api/helper/transit?url=${encodeURIComponent(url)}`
+      url = `${_paths.server.realMountPrefix}/api/helper/transit?url=${encodeURIComponent(applyGithubProxy(url))}`
     }
     return $0.replace($1, url)
   }

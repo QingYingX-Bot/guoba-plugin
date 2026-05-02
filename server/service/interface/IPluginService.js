@@ -6,7 +6,7 @@ import fetch from 'node-fetch'
 import {exec} from 'child_process'
 import {Service} from '#guoba.framework';
 import {cfg, Constant, GuobaSupportMap, PluginsMap} from '#guoba.platform';
-import {BotActions} from '#guoba.utils'
+import {applyGithubProxy, BotActions} from '#guoba.utils'
 import {parsePluginsIndexByLocal, parseReadmeLink} from '../../helper/pluginsIndex.js'
 import {getPluginIconPath, parseShowInMenu} from '../../utils/pluginUtils.js'
 import {serializeGuobaSchemas} from '../../utils/schemaCompat.js'
@@ -199,7 +199,7 @@ export default class IPluginService extends Service {
       let branches = ['master', 'main']
       for (let branch of branches) {
         baseUrl = url.replace('{branch}', branch)
-        let response = await fetch(`${baseUrl}/README.md`)
+        let response = await fetch(applyGithubProxy(`${baseUrl}/README.md`))
         if (response.status === 200) {
           text = await response.text()
           break

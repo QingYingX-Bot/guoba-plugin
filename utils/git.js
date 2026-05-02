@@ -1,7 +1,7 @@
 import path from 'path'
 import {GitTools} from '#guoba.framework'
 import {_paths, GitRepoMap} from '#guoba.platform'
-import {mkdirSync} from './common.js'
+import {applyGithubProxy, mkdirSync} from './common.js'
 
 const repos = [
   {
@@ -25,7 +25,7 @@ export function initRepos() {
     const tools = new GitTools(directory, url, {
       strictMode: true,
       immediateClone: true,
-      fallbackUrl: fallbackUrl
+      fallbackUrl: fallbackUrl ? applyGithubProxy(fallbackUrl) : fallbackUrl
     })
     GitRepoMap.set(name, tools)
   }
