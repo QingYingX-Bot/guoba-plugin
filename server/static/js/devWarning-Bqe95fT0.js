@@ -1,1 +1,0 @@
-import{L as e}from"./useConfigInject-B-KC9L2g.js";var t=((t,n,r)=>{e(t,`[ant-design-vue: ${n}] ${r}`)});export{t};
