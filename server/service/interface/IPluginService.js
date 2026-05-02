@@ -110,6 +110,7 @@ export default class IPluginService extends Service {
       const pluginFolder = keyParts[0] || pluginKey || item?.name || ''
       const pluginMeta = this.getRulePluginMeta(pluginFolder)
       const pluginName = pluginMeta.packageName
+      const pluginMenuName = this.resolveRulePluginMenuName(pluginFolder, pluginName)
       const className = String(item?.class?.name || '')
       const moduleFile = this.resolveRuleModuleFile(pluginFolder, keyParts.slice(1).join('/'), className)
       const moduleName = moduleFile.replace(/\.js$/i, '')
@@ -123,6 +124,7 @@ export default class IPluginService extends Service {
           key: `${pluginFolder}:${moduleFile}:${instanceName}:${functionName || index}:${index}`,
           pluginFolder,
           pluginName,
+          pluginMenuName,
           pluginPackageName: pluginName,
           pluginKey,
           pluginTitle: pluginName,
@@ -225,6 +227,22 @@ export default class IPluginService extends Service {
 
   escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
+  resolveRulePluginMenuName(pluginFolder, pluginName) {
+    const candidates = [
+      pluginFolder,
+      pluginName,
+      String(pluginFolder || '').toLowerCase(),
+      String(pluginName || '').toLowerCase(),
+    ].filter(Boolean)
+
+    for (const name of candidates) {
+      if (PluginsMap.has(name)) {
+        return name
+      }
+    }
+    return pluginFolder || pluginName || 'unknown'
   }
 
   getRulePluginMeta(pluginFolder) {

@@ -1,4 +1,49 @@
 // noinspection JSUnusedGlobalSymbols
+import {getConfigTabs} from '../../../../v3/config/model/useConfig.js'
+
+const configMenuBase = {
+  path: '/config',
+  name: 'Config',
+  component: '/guoba/config/index',
+  meta: {
+    title: '配置管理',
+    icon: 'ion:settings-outline',
+  },
+}
+
+function getConfigRouteName(key) {
+  return `Config_${String(key).replaceAll(/[^a-zA-Z0-9_]/g, '_')}`
+}
+
+export function useConfigMenu() {
+  const children = getConfigTabs().map((tab) => ({
+    path: `/config/@/${encodeURIComponent(tab.key)}`,
+    name: getConfigRouteName(tab.key),
+    component: '/guoba/config/index',
+    meta: {
+      title: tab.title ?? tab.key,
+      icon: tab.icon ?? 'ion:settings-outline',
+      ignoreRoute: true,
+    },
+  }))
+
+  children.push({
+    path: '/config/@/:key',
+    name: 'Config_Detail',
+    component: '/guoba/config/index',
+    meta: {
+      title: '配置管理',
+      hideMenu: true,
+    },
+  })
+
+  return {
+    ...configMenuBase,
+    redirect: children[0]?.path ?? configMenuBase.path,
+    children,
+  }
+}
+
 export const SystemMenus = {
   // 首页菜单
   home: {
@@ -21,15 +66,7 @@ export const SystemMenus = {
     },
   },
   // 配置管理
-  config: {
-    path: '/config',
-    name: 'Config',
-    component: '/guoba/config/index',
-    meta: {
-      title: '配置管理',
-      icon: 'ion:settings-outline',
-    },
-  },
+  config: configMenuBase,
   // 关于
   about: {
     path: '/about',
