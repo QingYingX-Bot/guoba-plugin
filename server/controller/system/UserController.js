@@ -12,6 +12,8 @@ export class UserController extends ApiController {
 
   registerRouters() {
     this.get('/getLoginUser', this.getLoginUser)
+    this.get('/profile', this.getProfile)
+    this.put('/profile', this.updateProfile)
     this.get('/list', this.getUserList)
     this.put('/account/status', this.setAccountStatus)
   }
@@ -24,7 +26,7 @@ export class UserController extends ApiController {
       userId: current.userId,
       username: current.username,
       realName: current.realName,
-      avatar: '',
+      avatar: this.getAvatar(),
       desc: '',
       homePath: '/home',
       roles: [
@@ -33,6 +35,42 @@ export class UserController extends ApiController {
       sourceBotUin: current.userId,
       sourcePlatform: current.platform || '',
     })
+  }
+
+  getProfile() {
+    return Result.ok({
+      displayName: String(cfg.get('login.displayName') || '').trim(),
+      avatar: this.getAvatar(),
+    })
+  }
+
+  async updateProfile(req) {
+    const {displayName = '', avatar = ''} = req.body || {}
+    const nextDisplayName = String(displayName || '').trim()
+    const nextAvatar = String(avatar || '').trim()
+    if (nextAvatar && !this.isSafeAvatarUrl(nextAvatar)) {
+      return Result.error('头像地址仅支持 http(s)、data:image 或站内静态资源路径')
+    }
+    cfg.set('login.displayName', nextDisplayName)
+    cfg.set('login.avatar', nextAvatar)
+    return Result.ok({
+      displayName: nextDisplayName,
+      avatar: nextAvatar,
+    }, '面板资料已保存')
+  }
+
+  getAvatar() {
+    const avatar = String(cfg.get('login.avatar') || '').trim()
+    return this.isSafeAvatarUrl(avatar) ? avatar : ''
+  }
+
+  isSafeAvatarUrl(avatar) {
+    if (!avatar) {
+      return false
+    }
+    return /^https?:\/\//i.test(avatar)
+      || /^data:image\//i.test(avatar)
+      || avatar.startsWith('/')
   }
 
   // 获取账号列表
@@ -132,10 +170,11 @@ export class UserController extends ApiController {
       : this.getCurrentUin() || uinList[0]
     if (currentUin) {
       const bot = Bot?.bots?.[currentUin] || Bot?.[currentUin]
+      const displayName = String(cfg.get('login.displayName') || '').trim()
       return {
         userId: currentUin,
         username: currentUin,
-        realName: this.getNickname(bot, currentUin),
+        realName: displayName || this.getNickname(bot, currentUin),
         platform: this.getPlatformLabel(currentUin, bot?.adapter || {}),
       }
     }
