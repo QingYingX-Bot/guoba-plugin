@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken'
 import {GuobaError, Service} from '#guoba.framework';
 import {cfg, Constant} from "#guoba.platform";
-import {getAllWebAddress, randomString} from '#guoba.utils'
+import {getAllWebAddress, randomString, verifyPasswordHash} from '#guoba.utils'
+
+const DEFAULT_TOKEN_EXPIRES = 3600 * 24
 
 export class LoginService extends Service {
   constructor(app) {
@@ -9,12 +11,13 @@ export class LoginService extends Service {
   }
 
   /** 注册并保存Token */
-  signToken(loginContext) {
+  signToken(loginContext, expiresIn = DEFAULT_TOKEN_EXPIRES) {
     const payload = this.normalizeLoginPayload(loginContext)
-    let token = jwt.sign(payload, cfg.getJwtSecret())
+    expiresIn = this.normalizeExpiresIn(expiresIn)
+    let token = jwt.sign(payload, cfg.getJwtSecret(), {expiresIn})
     // 将token存入redis
     let redisKey = this.getRedisKey(token)
-    redis.set(redisKey, token, {EX: 3600 * 24})
+    redis.set(redisKey, token, {EX: expiresIn})
     return token
   }
 
@@ -81,8 +84,45 @@ export class LoginService extends Service {
     return false
   }
 
+  getPasswordLoginStatus() {
+    const passwordHash = String(cfg.get('login.passwordHash') || '').trim()
+    return {
+      hasPassword: !!passwordHash,
+      rememberDays: this.getRememberDays(),
+    }
+  }
+
+  async passwordLoginCheck(password, remember = false) {
+    const status = this.getPasswordLoginStatus()
+    if (!status.hasPassword) {
+      throw new GuobaError('固定密码未设置')
+    }
+    const passwordHash = String(cfg.get('login.passwordHash') || '').trim()
+    if (!verifyPasswordHash(password, passwordHash)) {
+      return false
+    }
+    const expiresIn = remember ? status.rememberDays * 3600 * 24 : DEFAULT_TOKEN_EXPIRES
+    return this.signToken('admin', expiresIn)
+  }
+
   getRedisKey(token) {
     return `${Constant.REDIS_PREFIX}access-token:${token}`
+  }
+
+  getRememberDays() {
+    const days = Number(cfg.get('login.rememberDays') || 7)
+    if (!Number.isFinite(days)) {
+      return 7
+    }
+    return Math.min(Math.max(Math.trunc(days), 1), 365)
+  }
+
+  normalizeExpiresIn(expiresIn) {
+    const value = Number(expiresIn || DEFAULT_TOKEN_EXPIRES)
+    if (!Number.isFinite(value) || value <= 0) {
+      return DEFAULT_TOKEN_EXPIRES
+    }
+    return Math.trunc(value)
   }
 
   normalizeLoginPayload(loginContext) {

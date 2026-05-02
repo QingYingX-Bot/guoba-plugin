@@ -15,6 +15,9 @@ export class LoginController extends ApiController {
     this.post('/logout', this.logout)
     // 主人快速登录
     this.post('/login/quick', this.quickLogin)
+    // 固定密码登录
+    this.get('/login/password/status', this.passwordLoginStatus)
+    this.post('/login/password/check', this.passwordLoginCheck)
     // 前端验证码登录
     this.post('/login/code/request', this.codeLoginRequest)
     this.post('/login/code/check', this.codeLoginCheck)
@@ -39,6 +42,21 @@ export class LoginController extends ApiController {
   async quickLogin(req) {
     let {code} = req.body
     return Result.ok(await this.loginService.getQuickLogin(code))
+  }
+
+  passwordLoginStatus() {
+    return Result.ok(this.loginService.getPasswordLoginStatus())
+  }
+
+  async passwordLoginCheck(req) {
+    let {password, remember = false} = req.body || {}
+    password = typeof password === 'string' ? password : ''
+    const token = await this.loginService.passwordLoginCheck(password, remember === true)
+    if (token) {
+      logger.mark('[Guoba] 固定密码登录成功')
+      return Result.ok({token})
+    }
+    return Result.error('密码错误')
   }
 
   async codeLoginRequest() {

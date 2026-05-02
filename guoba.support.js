@@ -1,6 +1,9 @@
 import path from 'path'
 import lodash from 'lodash'
 import { _paths, cfg } from '#guoba.platform'
+import { createPasswordHash, randomString } from '#guoba.utils'
+
+const PASSWORD_SETUP_REDIS_KEY = 'Yz:guoba:login-password-code'
 
 // 支持锅巴
 export function supportGuoba () {
@@ -78,6 +81,68 @@ export function supportGuoba () {
           component: 'Input',
           componentProps: {
             placeholder: '请输入Github反代地址'
+          }
+        },
+        {
+          label: '登录配置',
+          component: 'SOFT_GROUP_BEGIN'
+        },
+        {
+          field: 'login.rememberDays',
+          label: '记住登录天数',
+          bottomHelpMessage: '密码登录勾选“记住登录”时 token 的有效天数',
+          component: 'InputNumber',
+          componentProps: {
+            min: 1,
+            max: 365,
+            placeholder: '请输入记住登录天数'
+          }
+        },
+        {
+          field: 'login.passwordSetup.code',
+          label: '后台验证码',
+          bottomHelpMessage: '点击下方“获取后台验证码”后，在机器人控制台日志中查看并填写',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入后台验证码'
+          }
+        },
+        {
+          field: 'login.passwordSetup.value',
+          label: '新固定密码',
+          bottomHelpMessage: '设置或修改固定密码必须填写后台验证码；保存配置不会直接保存这里的明文密码',
+          component: 'InputPassword',
+          componentProps: {
+            placeholder: '请输入新的固定登录密码'
+          }
+        },
+        {
+          field: 'login.passwordSetup.actions',
+          label: '密码设置',
+          bottomHelpMessage: '固定密码只会以哈希形式写入配置文件，不保存明文',
+          component: 'GButtons',
+          componentProps: {
+            buttons: [
+              {
+                action: 'requestPasswordSetupCode',
+                label: '获取后台验证码',
+                type: 'default'
+              },
+              {
+                action: 'setPasswordBySetupCode',
+                args: {
+                  code: '#{login.passwordSetup.code}',
+                  password: '#{login.passwordSetup.value}'
+                },
+                confirm: {
+                  content: '确认使用后台验证码设置或修改固定登录密码吗？',
+                  okText: '确认设置',
+                  title: '设置固定密码'
+                },
+                label: '设置/修改固定密码',
+                type: 'primary'
+              }
+            ]
           }
         },
         // {
@@ -211,7 +276,10 @@ export function supportGuoba () {
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {
-        let config = lodash.omit(cfg.merged, 'jwt')
+        let config = lodash.omit(lodash.cloneDeep(cfg.merged), ['jwt', 'login.passwordHash'])
+        lodash.unset(config, 'login.password')
+        lodash.set(config, 'login.passwordSetup.code', '')
+        lodash.set(config, 'login.passwordSetup.value', '')
         let host = lodash.get(config, 'server.host')
         if (Array.isArray(host)) {
           lodash.set(config, 'server.host', host[0])
@@ -220,8 +288,15 @@ export function supportGuoba () {
       },
       // 设置配置的方法（前端点确定后调用的方法）
       setConfigData (data, { Result }) {
+        data = lodash.cloneDeep(data || {})
+        lodash.unset(data, 'login.passwordSetup')
+        lodash.unset(data, 'login.password')
+        lodash.unset(data, 'login.password.value')
         let config = {}
         for (let [keyPath, value] of Object.entries(data)) {
+          if (keyPath.startsWith('login.passwordSetup.')) {
+            continue
+          }
           // 特殊处理 server.host
           if (keyPath === 'server.host') {
             let host = cfg.get('server.host')
@@ -233,8 +308,41 @@ export function supportGuoba () {
           lodash.set(config, keyPath, value)
         }
         config = lodash.merge({}, cfg.merged, config)
+        lodash.unset(config, 'login.passwordSetup')
+        lodash.unset(config, 'login.password')
         cfg.config.reader.setData(config)
         return Result.ok({}, '保存成功~')
+      },
+      actions: {
+        async requestPasswordSetupCode (_args, { Result }) {
+          const code = randomString(16)
+          await redis.set(PASSWORD_SETUP_REDIS_KEY, code, { EX: 300 })
+          logger.mark('[Guoba] 固定密码设置验证码已生成，请在 5 分钟内使用')
+          logger.info('#'.repeat(54))
+          logger.info('# [Guoba] 固定密码设置请求                         #')
+          logger.info(`# 您的设置验证码为: ${code}                 #`)
+          logger.info('# 验证码五分钟内有效，请尽快在锅巴配置页输入     #')
+          logger.info('# 若非本人操作请忽略并检查管理面板访问安全       #')
+          logger.info('#'.repeat(54))
+          return Result.ok({}, '验证码已生成，请在机器人控制台日志中查看')
+        },
+        async setPasswordBySetupCode (args, { Result }) {
+          const code = String(args?.code || '').trim()
+          const password = String(args?.password || '')
+          if (!code) {
+            return Result.error('请先输入后台验证码')
+          }
+          if (password.length < 6) {
+            return Result.error('固定登录密码长度不能小于 6 位')
+          }
+          const redisCode = await redis.get(PASSWORD_SETUP_REDIS_KEY)
+          if (!redisCode || redisCode !== code) {
+            return Result.error('后台验证码错误或已失效')
+          }
+          await redis.del(PASSWORD_SETUP_REDIS_KEY)
+          cfg.set('login.passwordHash', createPasswordHash(password))
+          return Result.ok({}, '固定登录密码已设置')
+        }
       }
     }
   }

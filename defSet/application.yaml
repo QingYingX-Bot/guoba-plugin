@@ -13,6 +13,16 @@ base:
   githubReverseProxy: false
   # Github反代地址
   githubProxyUrl: ""
+# 登录配置
+login:
+  # 面板显示昵称
+  displayName: ""
+  # 面板头像地址，支持 http(s)、data:image 或站内静态资源路径
+  avatar: ""
+  # 固定密码哈希，支持配置页自动生成的 pbkdf2-sha256 哈希
+  passwordHash: ""
+  # 勾选记住登录时 token 有效天数
+  rememberDays: 7
 # 服务器配置
 server:
   # 启动地址（仅用于控制台输出）
