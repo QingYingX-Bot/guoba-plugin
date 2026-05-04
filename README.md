@@ -2,11 +2,11 @@
 
 `Guoba-Plugin Fork`是`Yunzai-Bot`的扩展插件，主要提供后台管理界面。
 
-> 原项目地址：[gitee](https://gitee.com/guoba-yunzai/guoba-plugin) | [github](https://github.com/QingYingX-Bot/guoba-plugin)
+> 原项目地址：[gitee](https://gitee.com/guoba-yunzai/guoba-plugin) | [github](https://github.com/guoba-yunzai/guoba-plugin)
 
 具体功能可在安装插件后，通过发送`#锅巴帮助`来进行查看。
 
-插件交流群：[点击加群](https://qm.qq.com/q/QO3auCaOAQ)
+插件反馈&交流群：[点击加群](https://qm.qq.com/q/QO3auCaOAQ)
 
 ## 安装插件
 

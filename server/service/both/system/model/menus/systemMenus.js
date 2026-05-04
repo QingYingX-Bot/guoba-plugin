@@ -11,6 +11,17 @@ const configMenuBase = {
   },
 }
 
+const configTabIconMap = {
+  base: 'ion:options-outline',
+  genshin: 'ion:sparkles-outline',
+  group: 'ion:people-outline',
+  other: 'ion:ellipsis-horizontal-circle-outline',
+}
+
+function getConfigTabIcon(tab) {
+  return tab.icon ?? configTabIconMap[tab.key] ?? 'ion:settings-outline'
+}
+
 function getConfigRouteName(key) {
   return `Config_${String(key).replaceAll(/[^a-zA-Z0-9_]/g, '_')}`
 }
@@ -22,7 +33,7 @@ export function useConfigMenu() {
     component: '/guoba/config/index',
     meta: {
       title: tab.title ?? tab.key,
-      icon: tab.icon ?? 'ion:settings-outline',
+      icon: getConfigTabIcon(tab),
       ignoreRoute: true,
     },
   }))

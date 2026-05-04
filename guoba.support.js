@@ -20,6 +20,7 @@ export function supportGuoba () {
       description: '主要提供后台管理界面',
       // 作者可以为字符串也可以为数组，当有多个作者时建议使用数组
       author: [
+        '@QingYingX',
         '@zolay-poi',
         '@Guoba-Yunzai'
       ],
