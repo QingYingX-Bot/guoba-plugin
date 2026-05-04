@@ -87,7 +87,7 @@ server:
 - `apps/` 放聊天侧指令，`server/` 放管理面板后端，`utils/` 和 `models/` 提供通用工具与聚合导出。
 - `defSet/` 是默认配置模板，`config/` 是本地运行配置。
 - `server/static/` 是前端构建产物；前端源码在独立仓库 `guoba-plugin-web/` 中。
-- `resources/images/` 放图片资源，`docs/` 放维护文档和 issue 进度。
+- `resources/images/` 放图片资源，`docs/` 放维护文档。
 
 更完整的目录说明见：[docs/PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)。
 

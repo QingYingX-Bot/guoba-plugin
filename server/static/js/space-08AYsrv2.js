@@ -1,1 +1,0 @@
-import"./vue.runtime.esm-bundler-Cn9skj67.js";import"./useConfigInject-BsY3UyrB.js";import"./vue-types-BjDAgegB.js";import{t as e}from"./Compact-U1MQAnyx.js";import{n as t,t as n}from"./space-CiEU-UxG.js";export{e as Compact,n as default,t as spaceProps};

@@ -35,6 +35,23 @@ const pluginRulesMenu = {
   children: [],
 }
 
+function getMenuPluginIcon(pluginInfo, fallback = 'clarity:plugin-line') {
+  const pluginIconPath = getPluginIconPath(pluginInfo)
+  return pluginIconPath || pluginInfo?.icon || fallback
+}
+
+function getMenuPluginGuobaMeta(pluginInfo) {
+  const pluginIconPath = getPluginIconPath(pluginInfo)
+  return {
+    plugin: {
+      name: pluginInfo?.name,
+      icon: pluginInfo?.icon,
+      iconColor: pluginInfo?.iconColor,
+      iconPath: pluginIconPath,
+    },
+  }
+}
+
 // 插件的菜单
 // noinspection JSUnusedGlobalSymbols
 export async function usePluginsMenu() {
@@ -59,8 +76,7 @@ export async function usePluginsMenu() {
       return
     }
 
-    const pluginIconPath = getPluginIconPath(value.pluginInfo)
-    const pluginIcon = pluginIconPath || value.pluginInfo?.icon || 'clarity:plugin-line'
+    const pluginIcon = getMenuPluginIcon(value.pluginInfo)
 
     const detailMenu = {
       path: `/plugin/@/${name}`,
@@ -72,12 +88,7 @@ export async function usePluginsMenu() {
         ignoreRoute: true,
       },
       guobaMeta: {
-        plugin: {
-          name: name,
-          icon: value.pluginInfo?.icon,
-          iconColor: value.pluginInfo?.iconColor,
-          iconPath: pluginIconPath,
-        },
+        ...getMenuPluginGuobaMeta(value.pluginInfo),
       }
     }
 
@@ -90,19 +101,21 @@ export async function usePluginsMenu() {
   })
 
   Array.from(PluginsMap.values())
-    .map((plugin) => plugin?.name)
-    .filter(Boolean)
-    .sort((a, b) => String(a).localeCompare(String(b)))
-    .forEach((name) => {
+    .filter((plugin) => plugin?.name)
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+    .forEach((plugin) => {
+      const name = plugin.name
+      const pluginIcon = getMenuPluginIcon(plugin, 'lucide:file-check-2')
       pluginRuleMenus.push({
         path: `/plugins/rules/@/${encodeURIComponent(name)}`,
         name: `PluginRules_${String(name).replaceAll(/[^a-zA-Z0-9_]/g, '_')}`,
         component: '/guoba/plugins/rules/index',
         meta: {
           title: name,
-          icon: 'lucide:file-check-2',
+          icon: pluginIcon,
           ignoreRoute: true,
         },
+        guobaMeta: getMenuPluginGuobaMeta(plugin),
       })
     })
 

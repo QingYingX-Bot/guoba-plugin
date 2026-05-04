@@ -39,7 +39,7 @@
 
 ## 维护文件
 
-- `docs/`：项目结构、issue 进度等维护文档。
+- `docs/`：项目结构等维护文档。
 - `scripts/maintenance/`：维护和兼容性检查脚本。
 - `AGENTS.md`：Codex/agent 协作说明。
 
