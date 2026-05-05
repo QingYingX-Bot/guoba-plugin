@@ -12,6 +12,109 @@ const CfgAdapter = await (() => {
 
 const addGroupPromptProps = CfgAdapter['addGroupPromptProps']
 
+const serverConfigCards = CfgAdapter['baseConfig'].server ?? []
+
+const defaultServerConfigCards = [
+  {
+    key: 'system.server',
+    title: '服务器配置',
+    desc: '对服务器进行相关配置',
+    schemas: [
+      {
+        field: 'url',
+        label: '服务器地址',
+        component: 'Input',
+        componentProps: {
+          placeholder: '请输入服务器地址',
+        },
+      },
+      {
+        field: 'port',
+        label: '服务器端口',
+        component: 'InputNumber',
+        componentProps: {
+          placeholder: '0-65535',
+          min: 0,
+          max: 65535,
+        },
+      },
+      {
+        field: 'redirect',
+        label: '服务器缺省跳转地址',
+        component: 'Input',
+        componentProps: {
+          placeholder: '请输入地址',
+        },
+      },
+      {
+        field: 'auth',
+        label: '服务器鉴权',
+        component: 'GSubForm',
+        componentProps: {
+          multiple: true,
+          modalProps: {
+            title: '服务器鉴权配置',
+          },
+          schemas: [
+            {
+              field: 'key',
+              label: '鉴权标识',
+              bottomHelpMessage: '不能重复、不能包含空格',
+              component: 'Input',
+              required: true,
+              rules: [
+                {pattern: '^[^\\s]*$', message: '不能包含空格'},
+              ],
+            },
+            {
+              field: 'value',
+              label: '鉴权值',
+              component: 'Input',
+              required: true,
+            },
+          ],
+        },
+      },
+      {
+        field: 'https.url',
+        label: 'HTTPS 服务器地址',
+        component: 'Input',
+        componentProps: {
+          placeholder: '请输入服务器地址',
+        },
+      },
+      {
+        field: 'https.port',
+        label: 'HTTPS 服务器端口',
+        component: 'InputNumber',
+        componentProps: {
+          placeholder: '0-65535',
+          min: 0,
+          max: 65535,
+        },
+      },
+      {
+        field: 'https.key',
+        label: 'HTTPS 服务器私钥',
+        component: 'Input',
+        componentProps: {
+          placeholder: '请输入服务器私钥文件路径',
+        },
+      },
+      {
+        field: 'https.cert',
+        label: 'HTTPS 服务器证书',
+        component: 'Input',
+        componentProps: {
+          placeholder: '请输入服务器证书文件路径',
+        },
+      },
+    ],
+  },
+]
+
+const resolvedServerConfigCards = serverConfigCards.length > 0 ? serverConfigCards : defaultServerConfigCards
+
 // 基础配置
 const baseConfig = {
   key: 'base',
@@ -90,62 +193,6 @@ const baseConfig = {
         },
       ],
 
-    },
-    ...(CfgAdapter['baseConfig'].server ?? []),
-    {
-      key: 'system.redis',
-      title: 'Redis配置',
-      desc: '对Redis服务器进行相关配置',
-      schemas: [
-        {
-          field: 'host',
-          label: 'Redis地址',
-          required: true,
-          component: 'Input',
-          componentProps: {
-            placeholder: '请输入Redis地址',
-          },
-        },
-        {
-          field: 'port',
-          label: 'Redis端口',
-          required: true,
-          component: 'InputNumber',
-          componentProps: {
-            placeholder: '请输入Redis端口',
-            min: 1,
-            max: 65535,
-          },
-        },
-        {
-          field: 'username',
-          label: 'Redis用户名',
-          bottomHelpMessage: '没有用户名可以为空',
-          component: 'Input',
-          componentProps: {
-            placeholder: '请输入Redis用户名',
-          },
-        },
-        {
-          field: 'password',
-          label: 'Redis密码',
-          bottomHelpMessage: '没有密码可以为空',
-          component: 'InputPassword',
-          componentProps: {
-            placeholder: '请输入Redis密码',
-          },
-        },
-        {
-          field: 'db',
-          label: 'Redis数据库',
-          required: true,
-          bottomHelpMessage: '一般不用改',
-          component: 'InputNumber',
-          componentProps: {
-            placeholder: '请输入Redis数据库',
-          },
-        },
-      ],
     },
   ],
 }
@@ -334,6 +381,297 @@ const genshinConfig = {
   ],
 }
 
+const serviceConfig = {
+  key: 'service',
+  title: '服务配置',
+  cards: [
+    ...resolvedServerConfigCards,
+    {
+      key: 'system.renderer',
+      title: '渲染后端',
+      desc: '配置截图与渲染后端，留空时使用默认 puppeteer',
+      schemas: [
+        {
+          field: 'name',
+          label: '渲染后端',
+          component: 'Input',
+          componentProps: {
+            placeholder: '默认 puppeteer，可填写 puppeteer / karin 等',
+          },
+        },
+      ],
+    },
+  ],
+}
+
+const adapterConfig = {
+  key: 'adapter',
+  title: '适配器配置',
+  cards: [
+    {
+      key: 'system.milky',
+      title: 'Milky 协议',
+      desc: '配置 Milky 适配器连接信息',
+      schemas: [
+        {
+          field: 'enable',
+          label: '启用 Milky',
+          component: 'Switch',
+        },
+        {
+          field: 'host',
+          label: '服务器地址',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 Milky 服务器地址',
+          },
+        },
+        {
+          field: 'port',
+          label: '服务器端口',
+          component: 'InputNumber',
+          componentProps: {
+            min: 1,
+            max: 65535,
+            placeholder: '请输入 Milky 服务器端口',
+          },
+        },
+        {
+          field: 'prefix',
+          label: 'URL 前缀',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 URL 前缀',
+          },
+        },
+        {
+          field: 'access_token',
+          label: '鉴权 Token',
+          component: 'InputPassword',
+          componentProps: {
+            placeholder: '请输入鉴权 Token',
+          },
+        },
+        {
+          field: 'connection',
+          label: '事件接收方式',
+          component: 'RadioGroup',
+          componentProps: {
+            options: [
+              {label: 'WebSocket', value: 'ws'},
+              {label: 'Webhook', value: 'webhook'},
+            ],
+          },
+        },
+        {
+          field: 'webhook.path',
+          label: 'Webhook 路径',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 Webhook 路径',
+          },
+        },
+        {
+          field: 'ws.heartbeat',
+          label: 'WS 心跳间隔',
+          component: 'InputNumber',
+          componentProps: {
+            min: 1,
+            placeholder: '秒',
+          },
+        },
+        {
+          field: 'ws.reconnect_interval',
+          label: 'WS 重连间隔',
+          component: 'InputNumber',
+          componentProps: {
+            min: 1,
+            placeholder: '秒',
+          },
+        },
+        {
+          field: 'http_timeout',
+          label: 'HTTP 超时',
+          component: 'InputNumber',
+          componentProps: {
+            min: 1,
+            placeholder: '秒',
+          },
+        },
+      ],
+    },
+    {
+      key: 'system.satori',
+      title: 'Satori 协议',
+      desc: '配置 Satori HTTP API 与事件 WebSocket',
+      schemas: [
+        {
+          field: 'enable',
+          label: '启用 Satori',
+          component: 'Switch',
+        },
+        {
+          field: 'http_endpoint',
+          label: 'HTTP API 地址',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 HTTP API 地址',
+          },
+        },
+        {
+          field: 'ws_endpoint',
+          label: 'WebSocket 地址',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 WebSocket 事件地址',
+          },
+        },
+        {
+          field: 'token',
+          label: '访问令牌',
+          component: 'InputPassword',
+          componentProps: {
+            placeholder: '请输入 API 访问令牌',
+          },
+        },
+        {
+          field: 'platform',
+          label: '平台名称',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入平台名称',
+          },
+        },
+        {
+          field: 'timeout',
+          label: '请求超时',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            placeholder: '毫秒',
+          },
+        },
+        {
+          field: 'heartbeat_interval',
+          label: '心跳间隔',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            placeholder: '毫秒',
+          },
+        },
+      ],
+    },
+  ],
+}
+
+const storageConfig = {
+  key: 'storage',
+  title: '数据存储',
+  cards: [
+    {
+      key: 'system.redis',
+      title: 'Redis 配置',
+      desc: '配置 Redis / Valkey 连接信息',
+      schemas: [
+        {
+          field: 'path',
+          label: 'Redis 命令路径',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 Redis 或 Valkey 命令路径',
+          },
+        },
+        {
+          field: 'host',
+          label: 'Redis 地址',
+          required: true,
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 Redis 地址',
+          },
+        },
+        {
+          field: 'port',
+          label: 'Redis 端口',
+          required: true,
+          component: 'InputNumber',
+          componentProps: {
+            placeholder: '请输入 Redis 端口',
+            min: 1,
+            max: 65535,
+          },
+        },
+        {
+          field: 'username',
+          label: 'Redis 用户名',
+          bottomHelpMessage: '没有用户名可以为空',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 Redis 用户名',
+          },
+        },
+        {
+          field: 'password',
+          label: 'Redis 密码',
+          bottomHelpMessage: '没有密码可以为空',
+          component: 'InputPassword',
+          componentProps: {
+            placeholder: '请输入 Redis 密码',
+          },
+        },
+        {
+          field: 'db',
+          label: 'Redis 数据库',
+          required: true,
+          bottomHelpMessage: '一般不用改',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            placeholder: '请输入 Redis 数据库',
+          },
+        },
+      ],
+    },
+    {
+      key: 'system.db',
+      title: '数据库配置',
+      desc: '配置 Sequelize 数据库连接',
+      schemas: [
+        {
+          field: 'dialect',
+          label: '数据库类型',
+          component: 'Select',
+          componentProps: {
+            options: [
+              {label: 'SQLite', value: 'sqlite'},
+              {label: 'MySQL', value: 'mysql'},
+              {label: 'PostgreSQL', value: 'postgres'},
+              {label: 'MariaDB', value: 'mariadb'},
+              {label: 'MSSQL', value: 'mssql'},
+              {label: 'DB2', value: 'db2'},
+            ],
+            placeholder: '请选择数据库类型',
+          },
+        },
+        {
+          field: 'storage',
+          label: 'SQLite 文件地址',
+          component: 'Input',
+          componentProps: {
+            placeholder: '请输入 SQLite 文件地址',
+          },
+        },
+        {
+          field: 'logging',
+          label: '数据库日志',
+          component: 'Switch',
+        },
+      ],
+    },
+  ],
+}
+
 const otherConfig = {
   key: 'other',
   title: '其他',
@@ -419,17 +757,23 @@ export function getConfigTabs() {
   if (hasGenshin) {
     tabs.push(genshinConfig)
   }
+  tabs.push(serviceConfig)
+  tabs.push(adapterConfig)
+  tabs.push(storageConfig)
   tabs.push(otherConfig)
   return tabs
 }
 
 export const configFile = {
   'system.bot': '/config/config/bot.yaml',
-  'system.qq': '/config/config/qq.yaml',
   'system.group': '/config/config/group.yaml',
   'system.redis': '/config/config/redis.yaml',
+  'system.db': '/config/config/db.yaml',
   'system.other': '/config/config/other.yaml',
   'system.server': '/config/config/server.yaml',
+  'system.renderer': '/config/config/renderer.yaml',
+  'system.milky': '/config/config/milky.yaml',
+  'system.satori': '/config/config/satori.yaml',
 
   'genshin.gacha': [
     '/plugins/genshin/config/config/gacha.set.yaml',

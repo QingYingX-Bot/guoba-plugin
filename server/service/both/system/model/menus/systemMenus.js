@@ -13,9 +13,12 @@ const configMenuBase = {
 
 const configTabIconMap = {
   base: 'ion:options-outline',
+  adapter: 'lucide:plug-zap',
   genshin: 'ion:sparkles-outline',
   group: 'ion:people-outline',
-  other: 'ion:ellipsis-horizontal-circle-outline',
+  other: 'lucide:shield-user',
+  service: 'lucide:server-cog',
+  storage: 'lucide:database',
 }
 
 function getConfigTabIcon(tab) {

@@ -1,7 +1,40 @@
 import {YamlReader} from "#guoba.framework"
 
 export function handleConfigData(action, key, field, value) {
+  if (key === 'system.server' && field === 'auth') {
+    return handleAuth(action, field, value)
+  }
   return {field, value};
+}
+
+function handleAuth(action, field, value) {
+  if (action === 'get') {
+    if (!value) {
+      return {field, value: []}
+    }
+    if (value instanceof Object && !Array.isArray(value)) {
+      return {
+        field,
+        value: Object.entries(value).map(([key, val]) => ({key, value: val})),
+      }
+    }
+    return {field, value: []}
+  }
+
+  field = YamlReader.CONFIG_FORCE_OVERLAY_KEY + field
+  if (!value) {
+    return {field, value: null}
+  }
+  if (Array.isArray(value) && value.length > 0) {
+    return {
+      field,
+      value: value.reduce((acc, cur) => {
+        acc[cur.key] = cur.value
+        return acc
+      }, {}),
+    }
+  }
+  return {field, value: null}
 }
 
 /**
