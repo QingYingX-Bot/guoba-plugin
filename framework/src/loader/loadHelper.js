@@ -18,7 +18,7 @@ export function useHelper(guobaApp) {
   app.use(bodyParser.urlencoded({limit: '50mb', extended: true}))
   // 上传文件
   const upload = multer({dest: 'data/upload_tmp/'})
-  app.post('*', upload.any(), function (req, res, next) {
+  app.post(/.*/, upload.any(), function (req, res, next) {
     next()
   })
 }
