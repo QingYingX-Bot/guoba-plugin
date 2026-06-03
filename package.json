@@ -1,6 +1,6 @@
 {
   "name": "guoba-plugin",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Guoba Fork 版 Yunzai-Bot 插件，兼容 Miao-Yunzai（V3、V4）、TRSS-Yunzai",
   "type": "module",
   "module": "index.js",
@@ -15,11 +15,9 @@
     "#guoba.framework.utils": "./framework/src/utils/common.js"
   },
   "dependencies": {
-    "body-parser": "^1.20.3",
-    "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "1.4.5-lts.1",
-    "socket.io": "^4.7.5"
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "2.1.1"
   },
   "keywords": [
     "锅巴",

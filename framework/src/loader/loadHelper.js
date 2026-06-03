@@ -1,6 +1,5 @@
 import express from "express";
 import multer from 'multer'
-import bodyParser from 'body-parser'
 
 /**
  * 一些辅助工具
@@ -14,11 +13,19 @@ export function useHelper(guobaApp) {
     app.use(_args.prefix, express.static(_args.staticPath))
   }
   // parse application/json
-  app.use(bodyParser.json({limit: '50mb'}))
-  app.use(bodyParser.urlencoded({limit: '50mb', extended: true}))
+  app.use(markBodyAlreadyParsed)
+  app.use(express.json({limit: '50mb'}))
+  app.use(express.urlencoded({limit: '50mb', extended: true}))
   // 上传文件
   const upload = multer({dest: 'data/upload_tmp/'})
-  app.post(/.*/, upload.any(), function (req, res, next) {
+  app.post('*splat', upload.any(), function (req, res, next) {
     next()
   })
+}
+
+function markBodyAlreadyParsed(req, res, next) {
+  if (req.body !== undefined && req.readable === false) {
+    req._body = true
+  }
+  next()
 }
