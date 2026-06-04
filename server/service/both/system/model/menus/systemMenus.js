@@ -79,6 +79,26 @@ export const SystemMenus = {
       icon: 'ant-design:user-outlined',
     },
   },
+  // 代发消息
+  message: {
+    path: '/message',
+    name: 'Message',
+    component: '/guoba/system/message/index',
+    meta: {
+      title: '代发消息',
+      icon: 'lucide:send',
+    },
+  },
+  // 任务管理
+  tasks: {
+    path: '/tasks',
+    name: 'Tasks',
+    component: '/guoba/system/tasks/index',
+    meta: {
+      title: '任务管理',
+      icon: 'lucide:list-checks',
+    },
+  },
   // 配置管理
   config: configMenuBase,
   // 关于

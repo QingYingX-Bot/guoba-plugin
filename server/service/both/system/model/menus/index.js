@@ -12,6 +12,8 @@ export async function useMenuList() {
   menus.push(useConfigMenu())
   menus.push(...(await usePluginsMenu()))
   menus.push(SystemMenus.account)
+  menus.push(SystemMenus.message)
+  menus.push(SystemMenus.tasks)
   menus.push(SystemMenus.about)
   return menus
 }
