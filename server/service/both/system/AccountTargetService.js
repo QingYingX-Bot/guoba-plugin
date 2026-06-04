@@ -72,7 +72,6 @@ export class AccountTargetService extends Service {
     return {
       id: String(userId),
       name: String(item?.nickname || item?.remark || item?.name || userId || ''),
-      remark: String(item?.remark || ''),
     }
   }
 

@@ -1,13 +1,11 @@
 import jwt from 'jsonwebtoken'
 import chalk from 'chalk'
-import {autowired, Service} from '#guoba.framework'
+import {Service} from '#guoba.framework'
 import {cfg, Constant} from '#guoba.platform'
 
 const forcedOfflineAccounts = new Set()
 
 export class AccountService extends Service {
-  accountMetaService = autowired('accountMetaService')
-
   async queryAccounts(req) {
     const preferredUin = this.getPreferredUinFromReq(req)
     const list = await this.listAccounts(preferredUin)
@@ -40,7 +38,6 @@ export class AccountService extends Service {
     const account = await this.resolveAccountItem(uin, 0, this.getCurrentUin())
     return {
       ...account,
-      meta: this.accountMetaService.get(uin),
       capabilities: this.getCapabilities(uin),
       diagnostics: this.getDiagnostics(uin),
     }
@@ -66,7 +63,6 @@ export class AccountService extends Service {
       status,
       canEnable: this.canEnable(bot, status),
       canDisable: this.canDisable(bot, status),
-      meta: this.accountMetaService.get(uin),
     }
   }
 
@@ -147,10 +143,6 @@ export class AccountService extends Service {
       adapterId: adapter?.id ? String(adapter.id) : '',
       adapterName: adapter?.name ? String(adapter.name) : '',
     }
-  }
-
-  updateAccountMeta(uin, data = {}) {
-    return this.accountMetaService.update(uin, data)
   }
 
   getPreferredUinFromReq(req) {

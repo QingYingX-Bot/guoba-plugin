@@ -17,7 +17,6 @@ export class AccountController extends ApiController {
     this.get('/:uin/diagnostics', this.getDiagnostics)
     this.get('/:uin/friends', this.getFriends)
     this.get('/:uin/groups', this.getGroups)
-    this.put('/:uin/profile', this.updateProfile)
     this.post('/:uin/status', this.setStatus)
     this.put('/:uin/status', this.setStatus)
   }
@@ -44,19 +43,6 @@ export class AccountController extends ApiController {
   async getGroups(req) {
     const {uin} = req.params
     return Result.ok(await this.accountTargetService.listGroups(uin, req.query))
-  }
-
-  async updateProfile(req) {
-    const {uin} = req.params
-    const begin = Date.now()
-    const data = this.accountService.updateAccountMeta(uin, req.body || {})
-    await this.auditService.record(req, 'account.profile.update', uin, {
-      botUin: uin,
-      params: req.body || {},
-      result: 'success',
-      duration: Date.now() - begin,
-    })
-    return Result.ok(data, '账号资料已保存')
   }
 
   async setStatus(req) {
