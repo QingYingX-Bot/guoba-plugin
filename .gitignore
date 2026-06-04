@@ -129,3 +129,6 @@ dist
 /scripts/*
 !/scripts/maintenance/
 !/scripts/maintenance/*.mjs
+
+# macOS shit
+.DS_Store
