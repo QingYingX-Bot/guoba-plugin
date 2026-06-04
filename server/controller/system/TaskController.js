@@ -2,6 +2,7 @@ import {autowired, Result} from '#guoba.framework'
 import {ApiController} from '#guoba.platform'
 
 export class TaskController extends ApiController {
+  pluginTaskService = autowired('pluginTaskService')
   taskService = autowired('taskService')
 
   constructor(guobaApp) {
@@ -10,11 +11,16 @@ export class TaskController extends ApiController {
 
   registerRouters() {
     this.get('/', this.queryTasks)
+    this.get('/plugin', this.queryPluginTasks)
     this.get('/:id', this.getTask)
   }
 
   async queryTasks(req) {
     return Result.ok(await this.taskService.query(req.query || {}))
+  }
+
+  async queryPluginTasks(req) {
+    return Result.ok(this.pluginTaskService.query(req.query || {}))
   }
 
   async getTask(req) {
