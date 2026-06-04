@@ -11,6 +11,7 @@ export class TaskController extends ApiController {
 
   registerRouters() {
     this.get('/', this.queryTasks)
+    this.get('/plugin/records', this.queryPluginTaskRecords)
     this.get('/plugin', this.queryPluginTasks)
     this.get('/:id', this.getTask)
   }
@@ -21,6 +22,10 @@ export class TaskController extends ApiController {
 
   async queryPluginTasks(req) {
     return Result.ok(this.pluginTaskService.query(req.query || {}))
+  }
+
+  async queryPluginTaskRecords(req) {
+    return Result.ok(this.pluginTaskService.queryRecords(req.query || {}))
   }
 
   async getTask(req) {

@@ -4,6 +4,9 @@ import {Service} from '#guoba.framework'
 import {_paths} from '#guoba.platform'
 import loader from '../../../../../../lib/plugins/loader.js'
 
+const ANSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g
+const MAX_LOG_BYTES = 3 * 1024 * 1024
+
 export class PluginTaskService extends Service {
   query(query = {}) {
     const keyword = String(query.keyword || '').trim().toLowerCase()
@@ -15,6 +18,21 @@ export class PluginTaskService extends Service {
     }
     if (keyword) {
       items = items.filter(item => this.matchKeyword(item, keyword))
+    }
+
+    return this.pageItems(items, query)
+  }
+
+  queryRecords(query = {}) {
+    const keyword = String(query.keyword || '').trim().toLowerCase()
+    const status = String(query.status || '').trim()
+    let items = this.getTaskRecords()
+
+    if (status) {
+      items = items.filter(item => item.status === status)
+    }
+    if (keyword) {
+      items = items.filter(item => this.matchRecordKeyword(item, keyword))
     }
 
     return this.pageItems(items, query)
@@ -100,6 +118,97 @@ export class PluginTaskService extends Service {
     }
   }
 
+  getTaskRecords() {
+    return this.getCommandLogFiles()
+      .flatMap(file => this.parseTaskLogFile(file))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  }
+
+  getCommandLogFiles() {
+    const logDir = path.join(_paths.root, 'logs')
+    try {
+      return fs.readdirSync(logDir)
+        .filter(name => /^command\.\d{4}-\d{2}-\d{2}\.log$/.test(name))
+        .sort((a, b) => b.localeCompare(a))
+        .slice(0, 3)
+        .map(name => path.join(logDir, name))
+    } catch {
+      return []
+    }
+  }
+
+  parseTaskLogFile(filePath) {
+    const date = path.basename(filePath).match(/^command\.(\d{4}-\d{2}-\d{2})\.log$/)?.[1] || ''
+    if (!date) {
+      return []
+    }
+    return this.readLogTail(filePath)
+      .split(/\r?\n/)
+      .map((line, index) => this.parseTaskLogLine(line, date, index))
+      .filter(Boolean)
+  }
+
+  readLogTail(filePath) {
+    try {
+      const stat = fs.statSync(filePath)
+      const start = Math.max(0, stat.size - MAX_LOG_BYTES)
+      const buffer = Buffer.alloc(stat.size - start)
+      const fd = fs.openSync(filePath, 'r')
+      try {
+        fs.readSync(fd, buffer, 0, buffer.length, start)
+      } finally {
+        fs.closeSync(fd)
+      }
+      return buffer.toString('utf8')
+    } catch {
+      return ''
+    }
+  }
+
+  parseTaskLogLine(line, date, index) {
+    const text = String(line || '').replace(ANSI_PATTERN, '')
+    const match = text.match(/^\[(\d{2}:\d{2}:\d{2}\.\d{3})\].*?\[\s*TASK\s*\]\s+(.+)$/)
+    if (!match) {
+      return null
+    }
+    const fields = this.parseTaskLogFields(match[2])
+    if (!fields.plugin || !fields.name || !fields.status) {
+      return null
+    }
+    const status = this.getRecordStatus(fields.status)
+    const createdAt = `${date}T${match[1]}`
+    return {
+      id: `${createdAt}:${fields.plugin}:${fields.name}:${index}`,
+      cost: fields.cost || '',
+      createdAt,
+      cron: fields.cron || '',
+      pluginId: fields.plugin,
+      status,
+      statusText: fields.status,
+      taskName: fields.name,
+    }
+  }
+
+  parseTaskLogFields(text) {
+    return String(text || '').split(/\s+\|\s+/).reduce((fields, part) => {
+      const match = part.match(/^([^:]+):\s*(.*)$/)
+      if (match) {
+        fields[String(match[1]).trim().toLowerCase()] = String(match[2] || '').trim()
+      }
+      return fields
+    }, {})
+  }
+
+  getRecordStatus(statusText) {
+    if (statusText === '完成') {
+      return 'success'
+    }
+    if (statusText === '开始处理') {
+      return 'running'
+    }
+    return 'unknown'
+  }
+
   matchKeyword(item, keyword) {
     return [
       item.pluginId,
@@ -109,6 +218,17 @@ export class PluginTaskService extends Service {
       item.cron,
       item.functionName,
       item.status,
+    ].some(value => String(value || '').toLowerCase().includes(keyword))
+  }
+
+  matchRecordKeyword(item, keyword) {
+    return [
+      item.pluginId,
+      item.taskName,
+      item.cron,
+      item.status,
+      item.statusText,
+      item.cost,
     ].some(value => String(value || '').toLowerCase().includes(keyword))
   }
 
