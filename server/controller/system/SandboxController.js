@@ -4,6 +4,7 @@ import {summarizeSandboxChat} from '../../service/both/system/model/sandboxChat.
 
 export class SandboxController extends ApiController {
   auditService = autowired('auditService')
+  sandboxConversationService = autowired('sandboxConversationService')
   sandboxService = autowired('sandboxService')
 
   constructor(guobaApp) {
@@ -16,7 +17,13 @@ export class SandboxController extends ApiController {
     this.put('/environments/:id', this.updateEnvironment)
     this.delete('/environments/:id', this.deleteEnvironment)
     this.post('/environments/:id/toggle', this.toggleEnvironment)
+    this.post('/code/run', this.runCode)
     this.post('/run', this.runCode)
+    this.get('/conversations', this.queryConversations)
+    this.post('/conversations', this.createConversation)
+    this.get('/conversations/:id', this.getConversation)
+    this.delete('/conversations/:id', this.deleteConversation)
+    this.post('/conversations/:id/messages', this.sendConversationMessage)
     this.get('/records', this.queryRecords)
     this.get('/records/:id', this.getRecord)
   }
@@ -62,6 +69,48 @@ export class SandboxController extends ApiController {
       environmentId,
     }, async () => {
       return await this.sandboxService.run({chat, code, environmentId})
+    })
+  }
+
+  async queryConversations() {
+    return Result.ok(await this.sandboxConversationService.queryConversations())
+  }
+
+  async createConversation(req) {
+    const {chat = {}, environmentId = '', title = ''} = req.body || {}
+    return await this.withAudit(req, 'sandbox.conversation.create', environmentId, {
+      chat: summarizeSandboxChat(chat),
+      environmentId,
+      title,
+    }, async () => {
+      return await this.sandboxConversationService.createConversation({chat, environmentId, title})
+    })
+  }
+
+  async getConversation(req) {
+    const record = await this.sandboxConversationService.getConversation(req.params.id)
+    if (!record) {
+      return Result.error('沙盒会话不存在')
+    }
+    return Result.ok(record)
+  }
+
+  async deleteConversation(req) {
+    const id = req.params.id
+    return await this.withAudit(req, 'sandbox.conversation.delete', id, {id}, async () => {
+      return await this.sandboxConversationService.deleteConversation(id)
+    })
+  }
+
+  async sendConversationMessage(req) {
+    const id = req.params.id
+    const {chat = {}, environmentId = '', message = ''} = req.body || {}
+    return await this.withAudit(req, 'sandbox.conversation.message', id, {
+      chat: summarizeSandboxChat({...chat, message}),
+      environmentId,
+      messageLength: String(message || chat.message || '').length,
+    }, async () => {
+      return await this.sandboxConversationService.sendMessage(id, {chat, environmentId, message})
     })
   }
 

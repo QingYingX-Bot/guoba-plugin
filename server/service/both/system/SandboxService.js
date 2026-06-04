@@ -91,13 +91,16 @@ export class SandboxService extends Service {
 
     const chat = normalizeSandboxChat(input.chat || {})
     const record = this.createRecord(env, code, chat)
-    Object.assign(record, runSandboxCode({
+    const result = runSandboxCode({
       chat,
       code,
       env,
       rootPath: this.rootPath,
       rootRealPath: this.rootRealPath,
-    }))
+    })
+    Object.assign(record, result, {
+      exitCode: result.status === 'success' ? 0 : 1,
+    })
     this.records.unshift(record)
     this.trimRecords()
     await this.saveRecords()
@@ -108,8 +111,12 @@ export class SandboxService extends Service {
     await this.ensureLoaded()
     const status = String(query.status || '').trim()
     const envId = String(query.environmentId || '').trim()
+    const mode = String(query.mode || '').trim()
     const keyword = String(query.keyword || '').trim().toLowerCase()
     let items = [...this.records]
+    if (mode) {
+      items = items.filter(item => (item.mode || 'code') === mode)
+    }
     if (status) {
       items = items.filter(item => item.status === status)
     }
@@ -125,6 +132,14 @@ export class SandboxService extends Service {
   async getRecord(id) {
     await this.ensureLoaded()
     return this.records.find(item => item.id === String(id || '')) || null
+  }
+
+  async appendRecord(record) {
+    await this.ensureLoaded()
+    this.records.unshift(record)
+    this.trimRecords()
+    await this.saveRecords()
+    return record
   }
 
   normalizeEnvironment(input = {}, base = {}) {
@@ -200,17 +215,21 @@ export class SandboxService extends Service {
       environmentId: env.id,
       environmentName: env.name,
       error: '',
+      exitCode: null,
       finishedAt: '',
       output: '',
       replies: [],
       result: '',
+      mode: 'code',
       startedAt: now,
       status: 'running',
     }
   }
 
   matchRecord(item, keyword) {
-    return [item.id, item.environmentName, item.codePreview, item.output, item.result, item.error, item.chat?.message]
+    const logs = (item.logs || []).map(log => log.content).join('\n')
+    const replies = (item.replies || []).map(reply => reply.content).join('\n')
+    return [item.id, item.environmentName, item.codePreview, item.output, item.result, item.error, item.chat?.message, logs, replies]
       .some(value => String(value || '').toLowerCase().includes(keyword))
   }
 
