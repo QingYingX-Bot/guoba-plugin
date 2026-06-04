@@ -10,6 +10,7 @@ import {
 
 const ANSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g
 const MAX_LOG_BYTES = 3 * 1024 * 1024
+const MAX_INPUT_CHARS = 500
 const LOG_TYPES = new Set(['command', 'error'])
 
 export class ConsoleService extends Service {
@@ -70,6 +71,18 @@ export class ConsoleService extends Service {
     })
   }
 
+  sendInput(input = {}) {
+    const command = this.normalizeCommand(input.command ?? input.input)
+    if (!this.isStdinReady()) {
+      throw new Error('标准输入未连接')
+    }
+    process.stdin.emit('data', Buffer.from(`${command}\n`, 'utf8'))
+    return {
+      command,
+      sentAt: new Date().toISOString(),
+    }
+  }
+
   writeStreamHeaders(res) {
     res.status(200)
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
@@ -83,6 +96,22 @@ export class ConsoleService extends Service {
     try {
       res.write(chunk)
     } catch {}
+  }
+
+  normalizeCommand(value) {
+    const command = String(value ?? '').replace(/\r?\n/g, ' ').trim()
+    if (!command) {
+      throw new Error('命令不能为空')
+    }
+    if (command.length > MAX_INPUT_CHARS) {
+      throw new Error(`命令不能超过 ${MAX_INPUT_CHARS} 字`)
+    }
+    return command
+  }
+
+  isStdinReady() {
+    const bot = globalThis.Bot
+    return Boolean(bot?.stdin?.sdk && typeof process.stdin?.emit === 'function')
   }
 
   normalizeType(type) {
