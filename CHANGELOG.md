@@ -1,5 +1,11 @@
 # 更新日志
 
+## 1.0.13 - 2026-06-04
+
+- 修正 JS 插件管理范围，仅扫描和操作 `plugins/example` 目录内的 `.js`、`.js.disabled` 与 `.js.exa` 文件。
+- JS 插件管理页面标题与路径展示调整为 `plugins/example`，`plugins/other`、`plugins/system` 与 `plugins/adapter` 保持系统插件和适配器目录边界。
+- 同步前端版本号与构建产物，面板版本展示更新为 `1.0.13`。
+
 ## 1.0.12 - 2026-06-04
 
 - 新增 JS 插件管理后端接口 `/api/js-plugins/list`、`/api/js-plugins/detail`、`/api/js-plugins/toggle`、`/api/js-plugins/copy-example` 与 `/api/js-plugins/reload`。

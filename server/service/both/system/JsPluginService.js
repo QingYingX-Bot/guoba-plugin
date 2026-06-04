@@ -12,7 +12,10 @@ export class JsPluginService extends Service {
   constructor(app) {
     super(app)
     this.pluginsRoot = path.resolve(_paths.root, 'plugins')
-    this.pluginsRealRoot = fs.realpathSync(this.pluginsRoot)
+    this.exampleRoot = path.join(this.pluginsRoot, 'example')
+    this.exampleRealRoot = fs.existsSync(this.exampleRoot)
+      ? fs.realpathSync(this.exampleRoot)
+      : this.exampleRoot
   }
 
   query(query = {}) {
@@ -95,20 +98,11 @@ export class JsPluginService extends Service {
   }
 
   scan() {
-    const items = []
-    for (const pluginFolder of this.readDirNames(this.pluginsRoot)) {
-      const pluginPath = path.join(this.pluginsRoot, pluginFolder)
-      if (!fs.statSync(pluginPath).isDirectory()) {
-        continue
-      }
-      items.push(...this.scanDir(pluginPath, pluginFolder, ''))
-      items.push(...this.scanDir(path.join(pluginPath, 'apps'), pluginFolder, 'apps'))
-    }
-    return items.sort((a, b) => a.pluginFolder.localeCompare(b.pluginFolder, 'zh-CN')
-      || a.moduleFile.localeCompare(b.moduleFile, 'zh-CN'))
+    return this.scanDir(this.exampleRoot, 'example')
+      .sort((a, b) => a.moduleFile.localeCompare(b.moduleFile, 'zh-CN'))
   }
 
-  scanDir(dirPath, pluginFolder, basePath) {
+  scanDir(dirPath, pluginFolder) {
     if (!fs.existsSync(dirPath)) {
       return []
     }
@@ -118,7 +112,7 @@ export class JsPluginService extends Service {
         const filePath = path.join(dirPath, name)
         return this.toItem(filePath, fs.statSync(filePath), this.tryReadPreview(filePath))
       })
-      .filter(item => item.pluginFolder === pluginFolder && item.moduleFile.startsWith(basePath))
+      .filter(item => item.pluginFolder === pluginFolder)
   }
 
   toItem(filePath, stat, content = null) {
@@ -187,9 +181,9 @@ export class JsPluginService extends Service {
   }
 
   assertPathInside(target) {
-    const relative = path.relative(this.pluginsRealRoot, target)
+    const relative = path.relative(this.exampleRealRoot, target)
     if (relative.startsWith('..') || path.isAbsolute(relative)) {
-      throw new GuobaError('路径超出插件目录')
+      throw new GuobaError('路径超出 plugins/example 目录')
     }
   }
 
