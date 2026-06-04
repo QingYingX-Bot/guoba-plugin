@@ -28,7 +28,7 @@ export class ConsoleController extends ApiController {
     const begin = Date.now()
     const params = this.getInputAuditParams(req.body || {})
     try {
-      const data = this.consoleService.sendInput(req.body || {})
+      const data = await this.consoleService.sendInput(req.body || {})
       await this.auditService.record(req, 'console.input', 'stdin', {
         duration: Date.now() - begin,
         params,

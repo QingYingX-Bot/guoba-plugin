@@ -7,6 +7,7 @@ import {
   installConsoleStreamHooks,
   writeConsoleStreamEvent,
 } from './model/consoleStreamHub.js'
+import {createStdinInputSender} from './model/stdinInputSender.js'
 
 const ANSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g
 const MAX_LOG_BYTES = 3 * 1024 * 1024
@@ -71,12 +72,13 @@ export class ConsoleService extends Service {
     })
   }
 
-  sendInput(input = {}) {
+  async sendInput(input = {}) {
     const command = this.normalizeCommand(input.command ?? input.input)
-    if (!this.isStdinReady()) {
-      throw new Error('标准输入未连接')
+    const sender = await createStdinInputSender()
+    if (!sender) {
+      throw new Error('stdin adapter 不可用')
     }
-    process.stdin.emit('data', Buffer.from(`${command}\n`, 'utf8'))
+    sender(command)
     return {
       command,
       sentAt: new Date().toISOString(),
@@ -107,11 +109,6 @@ export class ConsoleService extends Service {
       throw new Error(`命令不能超过 ${MAX_INPUT_CHARS} 字`)
     }
     return command
-  }
-
-  isStdinReady() {
-    const bot = globalThis.Bot
-    return Boolean(bot?.stdin?.sdk && typeof process.stdin?.emit === 'function')
   }
 
   normalizeType(type) {
