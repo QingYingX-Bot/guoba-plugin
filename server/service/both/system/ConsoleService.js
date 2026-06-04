@@ -2,12 +2,23 @@ import fs from 'fs'
 import path from 'path'
 import {Service} from '#guoba.framework'
 import {_paths} from '#guoba.platform'
+import {
+  getConsoleStreamHub,
+  installConsoleStreamHooks,
+  writeConsoleStreamEvent,
+} from './model/consoleStreamHub.js'
 
 const ANSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g
 const MAX_LOG_BYTES = 3 * 1024 * 1024
 const LOG_TYPES = new Set(['command', 'error'])
 
 export class ConsoleService extends Service {
+  constructor(app) {
+    super(app)
+    this.hub = getConsoleStreamHub()
+    installConsoleStreamHooks(this.hub)
+  }
+
   queryLogs(query = {}) {
     const type = this.normalizeType(query.type)
     const keyword = String(query.keyword || '').trim().toLowerCase()
@@ -36,6 +47,42 @@ export class ConsoleService extends Service {
       type,
       updatedAt: result.updatedAt,
     }
+  }
+
+  stream(req, res) {
+    installConsoleStreamHooks(this.hub)
+    this.writeStreamHeaders(res)
+    const client = {res}
+    this.hub.clients.add(client)
+
+    writeConsoleStreamEvent(res, 'hello', {
+      connectedAt: new Date().toISOString(),
+      replay: this.hub.buffer,
+    })
+
+    const heartbeat = setInterval(() => {
+      this.safeWrite(res, ': ping\n\n')
+    }, 15000)
+
+    req.on('close', () => {
+      clearInterval(heartbeat)
+      this.hub.clients.delete(client)
+    })
+  }
+
+  writeStreamHeaders(res) {
+    res.status(200)
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.setHeader('Connection', 'keep-alive')
+    res.setHeader('X-Accel-Buffering', 'no')
+    res.flushHeaders?.()
+  }
+
+  safeWrite(res, chunk) {
+    try {
+      res.write(chunk)
+    } catch {}
   }
 
   normalizeType(type) {

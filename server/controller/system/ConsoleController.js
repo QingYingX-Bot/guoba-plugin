@@ -10,9 +10,15 @@ export class ConsoleController extends ApiController {
 
   registerRouters() {
     this.get('/logs', this.queryLogs)
+    this.get('/stream', this.stream)
   }
 
   queryLogs(req) {
     return Result.ok(this.consoleService.queryLogs(req.query || {}))
+  }
+
+  stream(req, res) {
+    this.consoleService.stream(req, res)
+    return Result.VOID
   }
 }
