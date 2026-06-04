@@ -89,6 +89,16 @@ export const SystemMenus = {
       icon: 'lucide:send',
     },
   },
+  // 文件管理
+  files: {
+    path: '/files',
+    name: 'Files',
+    component: '/guoba/system/files/index',
+    meta: {
+      title: '文件管理',
+      icon: 'lucide:folder-open',
+    },
+  },
   // 任务管理
   tasks: {
     path: '/tasks',
