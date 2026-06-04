@@ -69,6 +69,16 @@ export const SystemMenus = {
       icon: 'bx:bx-home',
     },
   },
+  // 控制台
+  console: {
+    path: '/console',
+    name: 'Console',
+    component: '/guoba/system/console/index',
+    meta: {
+      title: '控制台',
+      icon: 'lucide:terminal',
+    },
+  },
   // 账号管理
   account: {
     path: '/account',
