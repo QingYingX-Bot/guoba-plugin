@@ -109,6 +109,16 @@ export const SystemMenus = {
       icon: 'lucide:folder-open',
     },
   },
+  // 沙盒管理
+  sandbox: {
+    path: '/sandbox',
+    name: 'Sandbox',
+    component: '/guoba/system/sandbox/index',
+    meta: {
+      title: '沙盒管理',
+      icon: 'lucide:box',
+    },
+  },
   // 任务管理
   tasks: {
     path: '/tasks',
