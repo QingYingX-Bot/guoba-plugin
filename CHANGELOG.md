@@ -1,5 +1,13 @@
 # 更新日志
 
+## 1.0.15 - 2026-06-04
+
+- 沙盒管理新增群聊/私聊事件模拟，运行代码时可直接使用全局 `e` 与 `sandbox.event`。
+- 模拟事件补充 `message_type`、`user_id`、`group_id`、`msg`、`raw_message`、`sender` 等常用字段。
+- 沙盒内 `e.reply()`、`e.group.sendMsg()` 与 `e.friend.sendMsg()` 会收集为模拟回复，并展示在最近结果和运行记录中。
+- 沙盒运行接口 `/api/sandbox/run` 新增 `chat` 入参，运行记录新增 `chat` 与 `replies` 字段。
+- 同步前端版本号与构建产物，面板版本展示更新为 `1.0.15`。
+
 ## 1.0.14 - 2026-06-04
 
 - 新增沙盒管理后端接口 `/api/sandbox/environments`、`/api/sandbox/run` 与 `/api/sandbox/records`，支持沙盒环境维护、JS 片段运行和运行记录查询。

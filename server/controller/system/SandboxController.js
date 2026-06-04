@@ -1,5 +1,6 @@
 import {autowired, Result} from '#guoba.framework'
 import {ApiController} from '#guoba.platform'
+import {summarizeSandboxChat} from '../../service/both/system/model/sandboxChat.js'
 
 export class SandboxController extends ApiController {
   auditService = autowired('auditService')
@@ -53,12 +54,14 @@ export class SandboxController extends ApiController {
   }
 
   async runCode(req) {
-    const {code = '', environmentId = ''} = req.body || {}
+    const {chat = {}, code = '', environmentId = ''} = req.body || {}
+    const chatSummary = summarizeSandboxChat(chat)
     return await this.withAudit(req, 'sandbox.run', environmentId, {
+      chat: chatSummary,
       codeLength: String(code || '').length,
       environmentId,
     }, async () => {
-      return await this.sandboxService.run({code, environmentId})
+      return await this.sandboxService.run({chat, code, environmentId})
     })
   }
 

@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import {GuobaError, Service} from '#guoba.framework'
 import {_paths} from '#guoba.platform'
+import {normalizeSandboxChat} from './model/sandboxChat.js'
 import {runSandboxCode} from './model/sandboxRuntime.js'
 
 const CODE_LIMIT = 50 * 1024
@@ -88,8 +89,10 @@ export class SandboxService extends Service {
       throw new GuobaError('代码超过 50KB，暂不支持运行')
     }
 
-    const record = this.createRecord(env, code)
+    const chat = normalizeSandboxChat(input.chat || {})
+    const record = this.createRecord(env, code, chat)
     Object.assign(record, runSandboxCode({
+      chat,
       code,
       env,
       rootPath: this.rootPath,
@@ -187,9 +190,10 @@ export class SandboxService extends Service {
     return env
   }
 
-  createRecord(env, code) {
+  createRecord(env, code, chat) {
     const now = new Date().toISOString()
     return {
+      chat,
       id: crypto.randomUUID(),
       codePreview: code.trim().slice(0, 200),
       duration: 0,
@@ -198,6 +202,7 @@ export class SandboxService extends Service {
       error: '',
       finishedAt: '',
       output: '',
+      replies: [],
       result: '',
       startedAt: now,
       status: 'running',
@@ -205,7 +210,7 @@ export class SandboxService extends Service {
   }
 
   matchRecord(item, keyword) {
-    return [item.id, item.environmentName, item.codePreview, item.output, item.result, item.error]
+    return [item.id, item.environmentName, item.codePreview, item.output, item.result, item.error, item.chat?.message]
       .some(value => String(value || '').toLowerCase().includes(keyword))
   }
 

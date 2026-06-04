@@ -3,10 +3,13 @@ import path from 'path'
 import {spawnSync} from 'child_process'
 import vm from 'vm'
 import GuobaError from '../../../../../framework/src/components/GuobaError.js'
+import {normalizeSandboxChat} from './sandboxChat.js'
 
-export function runSandboxCode({code, env, rootPath, rootRealPath}) {
+export function runSandboxCode({chat = {}, code, env, rootPath, rootRealPath}) {
   const begin = Date.now()
   const output = []
+  const replies = []
+  const event = createMockEvent(normalizeSandboxChat(chat), replies)
   const appendOutput = (...args) => {
     output.push(stringifyLog(args))
     while (output.join('\n').length > env.maxOutputLength) {
@@ -18,6 +21,7 @@ export function runSandboxCode({code, env, rootPath, rootRealPath}) {
     const context = vm.createContext(createContext({
       appendOutput,
       env,
+      event,
       rootPath,
       rootRealPath,
     }))
@@ -34,6 +38,7 @@ export function runSandboxCode({code, env, rootPath, rootRealPath}) {
       error: '',
       finishedAt: new Date().toISOString(),
       output: output.join('\n'),
+      replies,
       result: stringifyResult(result),
       status: 'success',
     }
@@ -43,13 +48,14 @@ export function runSandboxCode({code, env, rootPath, rootRealPath}) {
       error: error?.stack || error?.message || String(error),
       finishedAt: new Date().toISOString(),
       output: output.join('\n'),
+      replies,
       result: '',
       status: 'failed',
     }
   }
 }
 
-function createContext({appendOutput, env, rootPath, rootRealPath}) {
+function createContext({appendOutput, env, event, rootPath, rootRealPath}) {
   return {
     console: {
       debug: appendOutput,
@@ -58,8 +64,10 @@ function createContext({appendOutput, env, rootPath, rootRealPath}) {
       log: appendOutput,
       warn: appendOutput,
     },
+    e: event,
     sandbox: {
       env: publicEnvironment(env),
+      event,
       exec: (command, args = []) => execCommand({args, command, env, rootPath}),
       fs: {
         list: dirPath => listSandboxPath({dirPath, env, rootPath, rootRealPath}),
@@ -154,6 +162,65 @@ function resolveExistingDir({dir, rootPath, rootRealPath}) {
 function normalizeArgs(value) {
   const args = Array.isArray(value) ? value : []
   return args.slice(0, 20).map(item => String(item).slice(0, 200))
+}
+
+function createMockEvent(chat, replies) {
+  const selfId = toEventId(chat.selfId)
+  const userId = toEventId(chat.userId)
+  const groupId = toEventId(chat.groupId)
+  const event = {
+    atBot: chat.atBot,
+    bot: {self_id: selfId, uin: selfId},
+    isGroup: chat.messageType === 'group',
+    isMaster: chat.isMaster,
+    isPrivate: chat.messageType === 'private',
+    message: chat.message,
+    message_type: chat.messageType,
+    msg: chat.message,
+    nickname: chat.senderName,
+    post_type: 'message',
+    raw_message: chat.rawMessage,
+    reply: (content, quote = false) => {
+      if (replies.length >= 100) {
+        throw new GuobaError('模拟回复超过 100 条')
+      }
+      const item = {
+        content: truncate(stringifyResult(content), 2000),
+        createdAt: new Date().toISOString(),
+        messageId: `sandbox-reply-${replies.length + 1}`,
+        quote: Boolean(quote),
+      }
+      replies.push(item)
+      return {message_id: item.messageId, messageId: item.messageId}
+    },
+    self_id: selfId,
+    sender: {
+      card: chat.senderName,
+      nickname: chat.senderName,
+      role: 'member',
+      user_id: userId,
+    },
+    sub_type: chat.messageType === 'group' ? 'normal' : 'friend',
+    time: Math.floor(Date.now() / 1000),
+    user_id: userId,
+  }
+  if (chat.messageType === 'group') {
+    event.group_id = groupId
+    event.group_name = chat.groupName
+    event.group = {group_id: groupId, name: chat.groupName, sendMsg: event.reply}
+  } else {
+    event.friend = {nickname: chat.senderName, sendMsg: event.reply, user_id: userId}
+  }
+  return event
+}
+
+function toEventId(value) {
+  const text = String(value || '')
+  if (!/^\d+$/.test(text)) {
+    return text
+  }
+  const number = Number(text)
+  return Number.isSafeInteger(number) ? number : text
 }
 
 function publicEnvironment(env) {
