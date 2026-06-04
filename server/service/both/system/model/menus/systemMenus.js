@@ -119,6 +119,16 @@ export const SystemMenus = {
       icon: 'lucide:list-checks',
     },
   },
+  // JS插件管理
+  jsPlugins: {
+    path: '/js-plugins',
+    name: 'JsPlugins',
+    component: '/guoba/system/js-plugins/index',
+    meta: {
+      title: 'JS插件管理',
+      icon: 'lucide:file-code-2',
+    },
+  },
   // 配置管理
   config: configMenuBase,
   // 关于

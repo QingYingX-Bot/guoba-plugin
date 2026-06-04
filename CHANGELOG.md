@@ -1,5 +1,12 @@
 # 更新日志
 
+## 1.0.12 - 2026-06-04
+
+- 新增 JS 插件管理后端接口 `/api/js-plugins/list`、`/api/js-plugins/detail`、`/api/js-plugins/toggle`、`/api/js-plugins/copy-example` 与 `/api/js-plugins/reload`。
+- 新增 JS 插件管理页面，支持按状态和关键词查看 `plugins` 目录内 JS 插件文件、规则、任务与源码。
+- JS 插件管理支持启用、禁用、复制 `.js.exa` 示例文件与热重载已启用插件文件，相关操作写入审计日志。
+- 同步前端版本号与构建产物，面板版本展示更新为 `1.0.12`。
+
 ## 1.0.11 - 2026-06-04
 
 - 控制台新增 stdin 命令发送接口 `/api/console/input`，前端可直接向 Yunzai 标准输入发送单行命令。
