@@ -1,0 +1,1 @@
+import{ft as e}from"./useConfigInject-D3y1W_lU.js";import{n as t,t as n}from"./Col-sC3wOOMD.js";var r=e(n),i=e(t);export{r as n,i as t};
