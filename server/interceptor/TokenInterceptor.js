@@ -21,6 +21,13 @@ const exclude = [
   new RegExp('^/api/plugin/s/.+/icon'),
 ]
 
+const readonlyExclude = [
+  {
+    method: 'GET',
+    path: new RegExp('^/api/preferences/ui$'),
+  },
+]
+
 /**
  * Token校验拦截器
  * @param app
@@ -36,7 +43,7 @@ export default class TokenInterceptor extends Interceptor {
   async handler(req, res, next) {
     if (!include.find(reg => this.check(reg, req))) {
       next()
-    } else if (exclude.find(reg => this.check(reg, req))) {
+    } else if (exclude.find(reg => this.check(reg, req)) || this.checkReadonlyExclude(req)) {
       next()
     } else {
       // 从query里获取token
@@ -81,6 +88,11 @@ export default class TokenInterceptor extends Interceptor {
       path = path.substring(realMountPrefix.length)
     }
     return reg.test(path)
+  }
+
+  checkReadonlyExclude(req) {
+    const method = String(req.method || '').toUpperCase()
+    return readonlyExclude.some(item => item.method === method && this.check(item.path, req))
   }
 
   static priority = 100
