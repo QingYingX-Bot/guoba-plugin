@@ -1,3 +1,4 @@
+import net from 'net'
 import {autowired, Result} from '#guoba.framework'
 import {ApiController} from '#guoba.platform'
 
@@ -27,7 +28,7 @@ export default class HelperController extends ApiController {
   }
 
   tryReleasePort(req) {
-    if (req.hostname !== 'localhost') {
+    if (!isLoopbackRequest(req)) {
       return Result.noAuth()
     }
     logger.mark('[Guoba] 服务已在另一处启动，正在尝试停止当前服务……')
@@ -43,4 +44,37 @@ export default class HelperController extends ApiController {
     }, 10)
     return Result.ok()
   }
+}
+
+function isLoopbackRequest(req) {
+  const addresses = [
+    req.socket?.remoteAddress,
+    req.connection?.remoteAddress,
+    req.ip,
+  ].filter(Boolean)
+  return addresses.some(isLoopbackAddress)
+}
+
+function isLoopbackAddress(address) {
+  const ip = normalizeIpAddress(address)
+  if (ip === '::1' || ip === '0:0:0:0:0:0:0:1') {
+    return true
+  }
+  if (net.isIP(ip) === 4) {
+    const [first] = ip.split('.').map(Number)
+    return first === 127
+  }
+  return false
+}
+
+function normalizeIpAddress(address) {
+  let ip = String(address || '').trim()
+  const zoneIndex = ip.indexOf('%')
+  if (zoneIndex > -1) {
+    ip = ip.slice(0, zoneIndex)
+  }
+  if (ip.toLowerCase().startsWith('::ffff:')) {
+    ip = ip.slice(7)
+  }
+  return ip
 }
