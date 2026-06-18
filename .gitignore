@@ -1,6 +1,8 @@
 # server
 guoba-plugin-web
 
+.codex
+
 # Logs
 logs
 *.log

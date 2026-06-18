@@ -37,6 +37,11 @@ function handleAuth(action, field, value) {
   return {field, value: null}
 }
 
+function getGroupName(groupId) {
+  const group = Bot.pickGroup(groupId, true)
+  return group?.group_name || group?.name || group?.info?.group_name || ''
+}
+
 /**
  * 处理 group 配置
  */
@@ -54,7 +59,7 @@ export function handleGroupConfig(action, data) {
         }
       }
       groupId = Number(groupId) || String(groupId)
-      const groupName = Bot.pickGroup(groupId)?.info?.group_name
+      const groupName = getGroupName(groupId)
       if (!groupName) {
         continue
       }
