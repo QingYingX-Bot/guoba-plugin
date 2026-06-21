@@ -51,3 +51,4 @@
 - 锅巴自身旧自动检查更新流程和 `lib/compareVersions.js`。
 - 旧 `components/Changelog.js` 聊天渲染组件。
 - 旧 `GuobaResources` 资源仓库自动克隆配置。
+- 旧沙盒管理页面、`/sandbox` 菜单、`/api/sandbox/**` 接口和后端运行环境。

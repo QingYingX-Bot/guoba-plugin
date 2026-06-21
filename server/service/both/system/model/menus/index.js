@@ -15,7 +15,6 @@ export async function useMenuList() {
   menus.push(SystemMenus.account)
   menus.push(SystemMenus.message)
   menus.push(SystemMenus.files)
-  menus.push(SystemMenus.sandbox)
   menus.push(SystemMenus.jsPlugins)
   menus.push(SystemMenus.tasks)
   menus.push(SystemMenus.about)
