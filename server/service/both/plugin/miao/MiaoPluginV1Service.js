@@ -107,9 +107,10 @@ export default class MiaoPluginV1Service extends IMiaoPluginService {
   }
 
   restoreBackup(id) {
+    id = this.normalizeBackupId(id)
     let {backupPath} = this.getBackupCfg()
     let {cfgPath, mainImgPath, iconPath} = this.miaoPath
-    let backupDir = path.join(backupPath, id)
+    let backupDir = this.resolveInside(backupPath, id)
     fs.cpSync(`${backupDir}/${path.basename(cfgPath)}`, cfgPath)
     fs.cpSync(`${backupDir}/${path.basename(mainImgPath)}`, mainImgPath)
     fs.cpSync(`${backupDir}/${path.basename(iconPath)}`, iconPath)
@@ -117,8 +118,9 @@ export default class MiaoPluginV1Service extends IMiaoPluginService {
   }
 
   deleteBackup(id) {
+    id = this.normalizeBackupId(id)
     let {backupPath, backupList, save} = this.getBackupCfg()
-    let backupDir = path.join(backupPath, id)
+    let backupDir = this.resolveInside(backupPath, id)
     fs.rmSync(backupDir, {recursive: true})
     lodash.remove(backupList, {id})
     save()

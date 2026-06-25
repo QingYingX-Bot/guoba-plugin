@@ -41,7 +41,15 @@ export class LoginController extends ApiController {
 
   async quickLogin(req) {
     let {code} = req.body
-    return Result.ok(await this.loginService.getQuickLogin(code))
+    await this.loginService.assertLoginAllowed(req, 'quick')
+    try {
+      const result = await this.loginService.getQuickLogin(code)
+      await this.loginService.clearLoginFailures(req, 'quick')
+      return Result.ok(result)
+    } catch (error) {
+      await this.loginService.recordLoginFailure(req, 'quick')
+      throw error
+    }
   }
 
   passwordLoginStatus() {
@@ -51,11 +59,14 @@ export class LoginController extends ApiController {
   async passwordLoginCheck(req) {
     let {password, remember = false} = req.body || {}
     password = typeof password === 'string' ? password : ''
+    await this.loginService.assertLoginAllowed(req, 'password')
     const token = await this.loginService.passwordLoginCheck(password, remember === true)
     if (token) {
+      await this.loginService.clearLoginFailures(req, 'password')
       logger.mark('[Guoba] 固定密码登录成功')
       return Result.ok({token})
     }
+    await this.loginService.recordLoginFailure(req, 'password')
     return Result.error('密码错误')
   }
 
@@ -81,11 +92,14 @@ export class LoginController extends ApiController {
   async codeLoginCheck(req) {
     let {code} = req.body
     code = typeof code === 'string' ? code.trim() : code
+    await this.loginService.assertLoginAllowed(req, 'code')
     const token = await this.loginService.codeLoginCheck(code)
     if (token) {
+      await this.loginService.clearLoginFailures(req, 'code')
       logger.mark('[Guoba] 验证码登录成功')
       return Result.ok({token})
     }
+    await this.loginService.recordLoginFailure(req, 'code')
     return Result.error('验证码错误或已失效')
   }
 

@@ -3,7 +3,7 @@ import path from 'path'
 import yaml from 'yaml'
 import {_paths} from '#guoba.platform'
 
-import {Result, Service} from '#guoba.framework';
+import {GuobaError, Result, Service} from '#guoba.framework';
 
 export default class IMiaoPluginService extends Service {
   constructor(app) {
@@ -112,9 +112,35 @@ export default class IMiaoPluginService extends Service {
         fs.writeFileSync(dbPath, yaml.stringify(backupList), 'utf-8')
       },
       find(id) {
-        return backupList.find(item => item.id === id)
+        return backupList.find(item => String(item.id) === String(id))
       },
     }
+  }
+
+  normalizePathName(value, label) {
+    const name = String(value || '').trim()
+    if (!name || name === '.' || name === '..' || name.includes('/') || name.includes('\\') || name.includes('\0')) {
+      throw new GuobaError(`${label} 不合法`)
+    }
+    return name
+  }
+
+  normalizeBackupId(id) {
+    id = String(id || '').trim()
+    if (!/^\d{10,20}$/.test(id)) {
+      throw new GuobaError('备份ID不合法')
+    }
+    return id
+  }
+
+  resolveInside(root, ...segments) {
+    const base = path.resolve(root)
+    const target = path.resolve(base, ...segments)
+    const relative = path.relative(base, target)
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new GuobaError('路径超出允许范围')
+    }
+    return target
   }
 
   /**

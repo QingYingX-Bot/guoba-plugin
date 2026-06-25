@@ -4,6 +4,12 @@ import {cfg, Constant} from "#guoba.platform";
 import {getAllWebAddress, randomString, verifyPasswordHash} from '#guoba.utils'
 
 const DEFAULT_TOKEN_EXPIRES = 3600 * 24
+const QUICK_LOGIN_CODE_LENGTH = 16
+const LOGIN_RATE_LIMITS = {
+  code: {limit: 20, window: 300},
+  password: {limit: 10, window: 300},
+  quick: {limit: 20, window: 300},
+}
 
 export class LoginService extends Service {
   constructor(app) {
@@ -40,6 +46,7 @@ export class LoginService extends Service {
   }
 
   async getQuickLogin(code) {
+    code = this.normalizePublicLoginCode(code)
     if (!code) {
       throw new GuobaError('登录失败')
     }
@@ -54,7 +61,7 @@ export class LoginService extends Service {
 
   getQuickLoginRedisKey(code) {
     if (!code) {
-      code = randomString(6)
+      code = randomString(QUICK_LOGIN_CODE_LENGTH)
     }
     return {
       code,
@@ -75,9 +82,13 @@ export class LoginService extends Service {
   }
 
   async codeLoginCheck(code) {
+    code = this.normalizePublicLoginCode(code)
+    if (!code) {
+      return false
+    }
     let redisKey = `${Constant.REDIS_PREFIX}login-code`
     let redisCode = await redis.get(redisKey)
-    if (redisCode === code) {
+    if (typeof redisCode === 'string' && redisCode && redisCode === code) {
       await redis.del(redisKey)
       return await this.signToken('admin')
     }
@@ -107,6 +118,55 @@ export class LoginService extends Service {
 
   getRedisKey(token) {
     return `${Constant.REDIS_PREFIX}access-token:${token}`
+  }
+
+  async assertLoginAllowed(req, action) {
+    const options = LOGIN_RATE_LIMITS[action]
+    if (!options) {
+      return
+    }
+    const redisKey = this.getLoginRateRedisKey(req, action)
+    const current = Number(await redis.get(redisKey) || 0)
+    if (Number.isFinite(current) && current >= options.limit) {
+      throw new GuobaError('登录尝试过于频繁，请稍后再试')
+    }
+  }
+
+  async recordLoginFailure(req, action) {
+    const options = LOGIN_RATE_LIMITS[action]
+    if (!options) {
+      return
+    }
+    const redisKey = this.getLoginRateRedisKey(req, action)
+    const current = Number(await redis.get(redisKey) || 0)
+    const next = Number.isFinite(current) ? current + 1 : 1
+    await redis.set(redisKey, String(next), {EX: options.window})
+  }
+
+  async clearLoginFailures(req, action) {
+    const redisKey = this.getLoginRateRedisKey(req, action)
+    await redis.del(redisKey)
+  }
+
+  getLoginRateRedisKey(req, action) {
+    const ip = this.getRequestIp(req)
+    return `${Constant.REDIS_PREFIX}login-rate:${action}:${ip}`
+  }
+
+  getRequestIp(req) {
+    const address = req?.socket?.remoteAddress || req?.connection?.remoteAddress || req?.ip || 'unknown'
+    return String(address).trim().replaceAll(':', '_') || 'unknown'
+  }
+
+  normalizePublicLoginCode(code) {
+    if (typeof code !== 'string') {
+      return ''
+    }
+    code = code.trim()
+    if (!/^[0-9a-z]{1,64}$/i.test(code)) {
+      return ''
+    }
+    return code
   }
 
   getRememberDays() {

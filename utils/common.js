@@ -1,6 +1,7 @@
 import os from 'os'
 import fs from 'fs'
 import path from 'path'
+import crypto from 'crypto'
 import moment from 'moment'
 import lodash from 'lodash'
 import fetch from 'node-fetch'
@@ -13,11 +14,12 @@ import {isV3, isV4, isTRSS} from '#guoba.adapter'
  * @return {string}
  */
 export function randomString(length = 8) {
+  const alphabet = '0123456789abcdefghijklmnopqrstuvwxyz'
   let str = ''
   for (let i = 0; i < length; i++) {
-    str += lodash.random(36).toString(36)
+    str += alphabet[crypto.randomInt(alphabet.length)]
   }
-  return str.substr(0, length)
+  return str
 }
 
 export function toPairsMap(arg) {

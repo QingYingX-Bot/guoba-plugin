@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 import {Result, Service} from '#guoba.framework';
 
 const MAX_TRANSIT_SIZE = 20 * 1024 * 1024
+const TRANSIT_TIMEOUT_MS = 10000
 const allowedTransitExtensions = new Set([
   '.bmp', '.gif', '.ico', '.icon', '.jpeg', '.jpg', '.mp4', '.png',
   '.svg', '.webm', '.webp',
@@ -46,9 +47,23 @@ export default class HelperService extends Service {
         url.searchParams.append(name, item)
       }
     }
-    let response = await fetch(url.toString(), {
-      method: 'GET',
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), TRANSIT_TIMEOUT_MS)
+    let response
+    try {
+      response = await fetch(url.toString(), {
+        method: 'GET',
+        redirect: 'manual',
+        signal: controller.signal,
+      })
+    } catch (error) {
+      return Result.error(error?.name === 'AbortError' ? '请求超时' : '请求失败', 502)
+    } finally {
+      clearTimeout(timeout)
+    }
+    if (response.status >= 300 && response.status < 400) {
+      return Result.error('不允许重定向', 403)
+    }
     if (!response.ok) {
       return Result.error('请求失败', response.status)
     }

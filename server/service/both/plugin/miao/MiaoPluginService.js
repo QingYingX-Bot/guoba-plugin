@@ -150,8 +150,9 @@ export default class MiaoPluginService extends IMiaoPluginService {
   async getHelpThemeConfig(params) {
     let {themeName} = (params || {})
     if (!themeName) themeName = 'default'
+    themeName = this.normalizePathName(themeName, 'themeName')
     let {Data} = await this.getMiaoUtils()
-    let themeConfigPath = path.join(this.miaoPath.themePath, themeName, 'config.js')
+    let themeConfigPath = this.resolveInside(this.miaoPath.themePath, themeName, 'config.js')
     if (!fs.existsSync(themeConfigPath)) {
       themeName = 'default'
     }
@@ -161,6 +162,7 @@ export default class MiaoPluginService extends IMiaoPluginService {
   async saveHelpThemeConfig(params) {
     let {themeName, config} = (params || {})
     if (!themeName) themeName = 'default'
+    themeName = this.normalizePathName(themeName, 'themeName')
     if (themeName === 'default') {
       throw new GuobaError('默认皮肤不可修改！')
     }
@@ -169,14 +171,15 @@ export default class MiaoPluginService extends IMiaoPluginService {
     let themeStyle = (await Data.importModule(`resources/help/theme/${themeName}/config.js`)).style || {}
     let merge = lodash.merge({}, defaultStyle, themeStyle, config)
     let content = `export const style = ${JSON.stringify(merge, null, 2)}`
-    let savePath = path.join(this.miaoPath.themePath, themeName, 'config.js')
+    let savePath = this.resolveInside(this.miaoPath.themePath, themeName, 'config.js')
     fs.writeFileSync(savePath, content, 'utf-8')
   }
 
   async addHelpTheme(params, files) {
     let {themeName} = params
+    themeName = this.normalizePathName(themeName, 'themeName')
     let [mainPic] = files
-    let themePath = path.join(this.miaoPath.themePath, themeName)
+    let themePath = this.resolveInside(this.miaoPath.themePath, themeName)
     if (fs.existsSync(themePath)) {
       throw new GuobaError(`${themeName} 已存在！`)
     }
@@ -187,8 +190,9 @@ export default class MiaoPluginService extends IMiaoPluginService {
 
   async editHelpTheme(params, files) {
     let {themeName} = params
+    themeName = this.normalizePathName(themeName, 'themeName')
     let [mainPic] = files
-    let themePath = path.join(this.miaoPath.themePath, themeName)
+    let themePath = this.resolveInside(this.miaoPath.themePath, themeName)
     if (!fs.existsSync(themePath)) {
       throw new GuobaError(`${themeName} 不存在！`)
     }
@@ -201,10 +205,11 @@ export default class MiaoPluginService extends IMiaoPluginService {
     if (!themeName) {
       throw new GuobaError(`themeName 必须填写！`)
     }
+    themeName = this.normalizePathName(themeName, 'themeName')
     if (themeName === 'default') {
       throw new GuobaError(`默认皮肤不可删除！`)
     }
-    let themePath = path.join(this.miaoPath.themePath, themeName)
+    let themePath = this.resolveInside(this.miaoPath.themePath, themeName)
     fs.rmSync(themePath, {recursive: true})
   }
 
@@ -215,7 +220,8 @@ export default class MiaoPluginService extends IMiaoPluginService {
   getThemeMainPath(query) {
     let {themeName} = (query || {})
     if (!themeName) themeName = 'default'
-    let themeMainPath = path.join(this.miaoPath.themePath, themeName, 'main.png')
+    themeName = this.normalizePathName(themeName, 'themeName')
+    let themeMainPath = this.resolveInside(this.miaoPath.themePath, themeName, 'main.png')
     if (fs.existsSync(themeMainPath)) {
       return themeMainPath
     }
@@ -258,6 +264,7 @@ export default class MiaoPluginService extends IMiaoPluginService {
   }
 
   async restoreBackup(id) {
+    id = this.normalizeBackupId(id)
     let backupCfg = this.getBackupCfg()
     let item = backupCfg.find(id)
     if (!item) {
@@ -267,7 +274,7 @@ export default class MiaoPluginService extends IMiaoPluginService {
       await this.convertBackup(item)
     }
     let {helpCfgPath, iconPath} = this.miaoPath
-    let backupDir = path.join(backupCfg.backupPath, id)
+    let backupDir = this.resolveInside(backupCfg.backupPath, id)
     fs.cpSync(path.join(backupDir, path.basename(iconPath)), iconPath)
     fs.cpSync(path.join(backupDir, path.basename(helpCfgPath)), helpCfgPath)
     return true
@@ -276,7 +283,8 @@ export default class MiaoPluginService extends IMiaoPluginService {
   async convertBackup(backItem) {
     let {themePath} = this.miaoPath
     let {backupPath, save} = this.getBackupCfg()
-    let backupDir = path.join(backupPath, backItem.id)
+    const backupId = this.normalizeBackupId(backItem.id)
+    let backupDir = this.resolveInside(backupPath, backupId)
     // 将配置文件转为新格式
     let oldCfgPath = path.join(backupDir, 'help-cfg.js')
     if (!fs.existsSync(oldCfgPath)) {
@@ -308,15 +316,15 @@ export default class MiaoPluginService extends IMiaoPluginService {
     let mainImgPath = path.join(backupDir, 'main-01.png')
     // 将背景图片转为皮肤
     if (fs.existsSync(mainImgPath)) {
-      let themeName = backItem.remark
-      let themeDir = path.join(themePath, themeName)
+      let themeName = this.toSafeThemeName(backItem.remark, backupId)
+      let themeDir = this.resolveInside(themePath, themeName)
       let count = 0
       while (fs.existsSync(themeDir)) {
         if (count++ > 10) {
           throw new GuobaError('转换失败，皮肤名称重复')
         }
         themeName += '_' + lodash.random(100, 999)
-        themeDir = path.join(themePath, themeName)
+        themeDir = this.resolveInside(themePath, themeName)
       }
       fs.mkdirSync(themeDir)
       moveFile(mainImgPath, path.join(themeDir, 'main.png'))
@@ -336,12 +344,21 @@ export default class MiaoPluginService extends IMiaoPluginService {
   }
 
   deleteBackup(id) {
+    id = this.normalizeBackupId(id)
     let {backupPath, backupList, save} = this.getBackupCfg()
-    let backupDir = path.join(backupPath, id)
+    let backupDir = this.resolveInside(backupPath, id)
     fs.rmSync(backupDir, {recursive: true})
     lodash.remove(backupList, {id})
     save()
     return true
+  }
+
+  toSafeThemeName(value, fallback) {
+    try {
+      return this.normalizePathName(value, 'themeName')
+    } catch {
+      return `backup-${fallback}`
+    }
   }
 
 }

@@ -88,6 +88,8 @@ export default class PluginController extends ApiController {
       return Result.error('name不能为空')
     }
     let nameArr = name.split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
     if (nameArr.length === 0) {
       return Result.error('name不能为空')
     }

@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import lodash from 'lodash'
 import fetch from 'node-fetch'
-import {exec} from 'child_process'
+import {exec, execFile} from 'child_process'
 import loader from '../../../../../lib/plugins/loader.js'
 import {Service} from '#guoba.framework';
 import {cfg, Constant, GuobaSupportMap, PluginsMap} from '#guoba.platform';
@@ -414,7 +414,11 @@ export default class IPluginService extends Service {
    */
   async installPlugin(link, autoRestart, autoNpmInstall, packageManager = 'pnpm') {
     await this.initBotMethods();
-    const name = link.split('/').pop().replace(/\.git$/, '');
+    link = String(link || '').trim()
+    const name = this.getPluginNameFromLink(link)
+    if (!name) {
+      return {logs: [], status: 'error', message: '插件链接不合法'};
+    }
     const pluginPath = `plugins/${name}`;
     const logs = []
 
@@ -424,7 +428,7 @@ export default class IPluginService extends Service {
 
     const cloneUrl = applyGithubProxy(link)
 
-    let result = await Bot.exec(`git clone --depth 1 --single-branch "${cloneUrl}" "${pluginPath}"`);
+    let result = await this.execFileCommand('git', ['clone', '--depth', '1', '--single-branch', cloneUrl, pluginPath]);
     logs.push(this.formatExecLog('克隆插件', result))
 
     if (result.error) {
@@ -435,7 +439,7 @@ export default class IPluginService extends Service {
     if (autoNpmInstall && await Bot.fsStat(`${pluginPath}/package.json`)) {
       const installCommand = this.getInstallCommand(pluginPath, packageManager)
       if (installCommand) {
-        const installResult = await Bot.exec(installCommand);
+        const installResult = await this.execFileCommand(installCommand.file, installCommand.args, {cwd: pluginPath});
         logs.push(this.formatExecLog('安装依赖', installResult))
         if (installResult.error) {
           logger.error(`[Guoba] 插件安装失败：${installResult.error}`);
@@ -475,7 +479,7 @@ export default class IPluginService extends Service {
     let errorCount = 0
 
     for (const link of links) {
-      const name = link.split('/').pop().replace(/\.git$/, '')
+      const name = this.getPluginNameFromLink(link) || 'invalid-link'
       const result = await this.installPlugin(link, false, autoNpmInstall, packageManager)
       if (result.status === 'success') {
         successCount++
@@ -525,13 +529,58 @@ export default class IPluginService extends Service {
       }
     }
     const commands = {
-      bun: 'bun install',
-      npm: 'npm install',
-      pnpm: 'pnpm install',
-      yarn: 'yarn install',
+      bun: {file: 'bun', args: ['install']},
+      npm: {file: 'npm', args: ['install']},
+      pnpm: {file: 'pnpm', args: ['install']},
+      yarn: {file: 'yarn', args: ['install']},
     }
-    const command = commands[packageManager] || commands.pnpm
-    return `cd "${pluginPath}" && ${command}`
+    return commands[packageManager] || commands.pnpm
+  }
+
+  getPluginNameFromLink(link) {
+    const text = String(link || '').trim()
+    if (!text) {
+      return ''
+    }
+    let name = ''
+    if (/^git@[a-z0-9.-]+:[a-z0-9._~/-]+(?:\.git)?$/i.test(text)) {
+      name = text.split('/').pop()
+    } else {
+      try {
+        const url = new URL(text)
+        if (!['http:', 'https:', 'ssh:', 'git:'].includes(url.protocol)) {
+          return ''
+        }
+        name = url.pathname.split('/').filter(Boolean).pop()
+      } catch {
+        return ''
+      }
+    }
+    name = String(name || '').replace(/\.git$/i, '')
+    return this.isSafePluginName(name) ? name : ''
+  }
+
+  isSafePluginName(name) {
+    return /^[a-z0-9][a-z0-9._-]{0,127}$/i.test(String(name || ''))
+  }
+
+  execFileCommand(file, args = [], opts = {}) {
+    return new Promise((resolve) => {
+      const commandText = [file, ...args].join(' ')
+      if (!opts.quiet) {
+        logger.info(`[Guoba] 执行命令：${logger.blue(commandText)}`);
+      }
+      execFile(file, args, {...opts, windowsHide: opts.windowsHide ?? true}, (error, stdout, stderr) => {
+        resolve({error, stdout, stderr});
+        if (opts.quiet) {
+          return
+        }
+        logger.mark(`[Guoba] 执行命令完成：${logger.blue(commandText)}${stdout ? `\n${String(stdout).trim()}` : ""}${stderr ? logger.red(`\n${String(stderr).trim()}`) : ""}`);
+        if (error) {
+          logger.mark(`[Guoba] 执行命令错误：${logger.blue(commandText)}\n${logger.red((error?.message || error)?.trim?.() ?? '未知错误')}`);
+        }
+      });
+    });
   }
 
   formatExecLog(title, result = {}) {
@@ -550,6 +599,9 @@ export default class IPluginService extends Service {
 
   async uninstallPlugin(name, autoRestart = true) {
     await this.initBotMethods();
+    if (!this.isSafePluginName(name)) {
+      return {status: 'error', message: `插件 ${name} 名称不合法`};
+    }
     const pluginPath = `plugins/${name}`;
     if (await Bot.fsStat(pluginPath)) {
       let result = await Bot.rm(pluginPath)
