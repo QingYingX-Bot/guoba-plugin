@@ -4,7 +4,7 @@ import {_paths, cfg, Constant} from "#guoba.platform";
 
 // 弱令牌（只能用来访问静态资源等）
 const liteInclude = [
-  new RegExp('^/api/plugin/miao/help/theme/.+'),
+  new RegExp('^/api/plugin/miao/help/theme/(?:bg|main)$'),
 ]
 
 // 需要拦截的路径
@@ -15,10 +15,10 @@ const include = [
 
 // 不需要拦截的路径
 const exclude = [
-  new RegExp('^/api/login'),
-  new RegExp('^/api/helper/transit'),
-  new RegExp('^/api/helper/release_port'),
-  new RegExp('^/api/plugin/s/.+/icon'),
+  new RegExp('^/api/login(?:/|$)'),
+  new RegExp('^/api/helper/transit$'),
+  new RegExp('^/api/helper/release_port$'),
+  new RegExp('^/api/plugin/s/[^/]+/icon$'),
 ]
 
 const readonlyExclude = [

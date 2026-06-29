@@ -17,7 +17,7 @@ export async function useComponents(guobaApp) {
   for (const componentPath of componentPaths) {
     await loadClasses(componentPath, Object, classes);
   }
-  const entries = Object.entries(classes).sort((a, b) => a[1].priority - b[1].priority)
+  const entries = Object.entries(classes).sort((a, b) => getPriority(a[1]) - getPriority(b[1]))
   // 数组顺序即为加载优先级
   const componentsTypes = [
     // 拦截器
@@ -39,4 +39,9 @@ export async function useComponents(guobaApp) {
       }
     }
   }
+}
+
+function getPriority(clazz) {
+  const priority = Number(clazz?.priority)
+  return Number.isFinite(priority) ? priority : 1000
 }

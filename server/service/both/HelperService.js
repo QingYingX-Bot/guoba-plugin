@@ -4,13 +4,21 @@ import {Result, Service} from '#guoba.framework';
 
 const MAX_TRANSIT_SIZE = 20 * 1024 * 1024
 const TRANSIT_TIMEOUT_MS = 10000
-const allowedTransitExtensions = new Set([
-  '.bmp', '.gif', '.ico', '.icon', '.jpeg', '.jpg', '.mp4', '.png',
-  '.svg', '.webm', '.webp',
+const transitContentTypes = new Map([
+  ['.bmp', 'image/bmp'],
+  ['.gif', 'image/gif'],
+  ['.ico', 'image/x-icon'],
+  ['.icon', 'image/x-icon'],
+  ['.jpeg', 'image/jpeg'],
+  ['.jpg', 'image/jpeg'],
+  ['.mp4', 'video/mp4'],
+  ['.png', 'image/png'],
+  ['.webm', 'video/webm'],
+  ['.webp', 'image/webp'],
 ])
+const allowedTransitExtensions = new Set(transitContentTypes.keys())
 const allowedTransitResponseHeaders = new Set([
   'cache-control',
-  'content-type',
   'etag',
   'expires',
   'last-modified',
@@ -71,16 +79,12 @@ export default class HelperService extends Service {
     if (Number.isFinite(contentLength) && contentLength > MAX_TRANSIT_SIZE) {
       return Result.error('资源过大', 413)
     }
-    for (const [key, value] of response.headers.entries()) {
-      if (allowedTransitResponseHeaders.has(key.toLowerCase())) {
-        res.setHeader(key, value)
-      }
-    }
     let buffer = await response.arrayBuffer()
     buffer = Buffer.from(buffer)
     if (buffer.length > MAX_TRANSIT_SIZE) {
       return Result.error('资源过大', 413)
     }
+    setTransitResponseHeaders(res, url, response)
     return buffer
   }
 
@@ -113,9 +117,20 @@ function getTransitRejectReason(url) {
     return '仅支持Gitee媒体资源中转'
   }
   if (!allowedTransitExtensions.has(getUrlExtension(url))) {
-    return '仅支持图片或媒体资源中转'
+    return '仅支持安全图片或媒体资源中转'
   }
   return ''
+}
+
+function setTransitResponseHeaders(res, url, response) {
+  res.setHeader('Content-Type', transitContentTypes.get(getUrlExtension(url)) || 'application/octet-stream')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Content-Security-Policy', 'sandbox')
+  for (const [key, value] of response.headers.entries()) {
+    if (allowedTransitResponseHeaders.has(key.toLowerCase())) {
+      res.setHeader(key, value)
+    }
+  }
 }
 
 function isAllowedTransitHost(hostname) {

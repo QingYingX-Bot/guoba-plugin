@@ -1,5 +1,17 @@
+import fs from 'fs'
+import path from 'path'
 import {autowired, Result} from '#guoba.framework';
-import {ApiController, GuobaSupportMap} from '#guoba.platform'
+import {ApiController, GuobaSupportMap, _paths} from '#guoba.platform'
+
+const pluginIconContentTypes = new Map([
+  ['.bmp', 'image/bmp'],
+  ['.gif', 'image/gif'],
+  ['.ico', 'image/x-icon'],
+  ['.jpeg', 'image/jpeg'],
+  ['.jpg', 'image/jpeg'],
+  ['.png', 'image/png'],
+  ['.webp', 'image/webp'],
+])
 
 export default class PluginController extends ApiController {
 
@@ -60,7 +72,7 @@ export default class PluginController extends ApiController {
   }
 
   async installPlugin(req) {
-    let {link, autoRestart = true, autoNpmInstall = true, packageManager = 'pnpm'} = req.body
+    let {link, autoRestart = true, autoNpmInstall = true, packageManager = 'pnpm'} = req.body || {}
     if (!link) {
       return Result.error('link不能为空')
     }
@@ -69,7 +81,7 @@ export default class PluginController extends ApiController {
   }
 
   async installPluginBatch(req) {
-    let {links, autoRestart = true, autoNpmInstall = true, packageManager = 'pnpm'} = req.body
+    let {links, autoRestart = true, autoNpmInstall = true, packageManager = 'pnpm'} = req.body || {}
     if (!Array.isArray(links)) {
       links = String(links || '').split(',')
     }
@@ -116,7 +128,13 @@ export default class PluginController extends ApiController {
     if (!pluginInfo || !pluginInfo.iconPath) {
       return Result.error('该插件没有配置iconPath')
     }
-    res.sendFile(pluginInfo.iconPath)
+    const icon = resolvePluginIconFile(pluginInfo.iconPath)
+    if (!icon) {
+      return Result.error('插件图标路径不合法', 403)
+    }
+    res.setHeader('Content-Type', icon.contentType)
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.sendFile(icon.filePath)
     return Result.VOID
   }
 
@@ -168,4 +186,31 @@ export default class PluginController extends ApiController {
     return action(body.args, {Result})
   }
 
+}
+
+function resolvePluginIconFile(iconPath) {
+  const text = String(iconPath || '').trim()
+  if (!text || text.includes('\0')) {
+    return null
+  }
+  const filePath = path.resolve(text)
+  const contentType = pluginIconContentTypes.get(path.extname(filePath).toLowerCase())
+  if (!contentType) {
+    return null
+  }
+  try {
+    const realPluginsRoot = fs.realpathSync(path.join(_paths.root, 'plugins'))
+    const realFilePath = fs.realpathSync(filePath)
+    if (!isInsidePath(realFilePath, realPluginsRoot) || !fs.statSync(realFilePath).isFile()) {
+      return null
+    }
+    return {filePath: realFilePath, contentType}
+  } catch {
+    return null
+  }
+}
+
+function isInsidePath(target, root) {
+  const relative = path.relative(root, target)
+  return !!relative && !relative.startsWith('..') && !path.isAbsolute(relative)
 }

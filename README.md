@@ -2,6 +2,8 @@
 
 `Guoba-Plugin Fork`是`Yunzai-Bot`的扩展插件，主要提供后台管理界面。
 
+当前版本：`1.0.18`
+
 > 原项目地址：[gitee](https://gitee.com/guoba-yunzai/guoba-plugin) | [github](https://github.com/guoba-yunzai/guoba-plugin)
 
 具体功能可在安装插件后，通过发送`#锅巴帮助`来进行查看。
@@ -91,6 +93,13 @@ server:
 ## 更新插件
 
 一般会自动更新，如需手动更新，请发送`#锅巴更新`指令
+
+## 安全建议
+
+- 管理面板优先部署在内网、VPN 或反向代理鉴权之后。
+- 公网访问需使用高强度固定密码，并定期更换 `plugins/Guoba-Plugin/config/application.yaml` 中的 `jwt.secret`。
+- 插件安装默认只允许 `github.com`、`gitee.com`、`gitlab.com`、`gitcode.com`，可在锅巴配置页的“Git安装白名单”中按需增减。
+- `robots.txt` 与 `X-Robots-Tag` 已默认禁止搜索引擎索引面板路径，公网服务仍建议配合防火墙或访问控制。
 
 ## 项目结构
 

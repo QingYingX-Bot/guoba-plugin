@@ -11,6 +11,10 @@ import {applyGithubProxy, BotActions} from '#guoba.utils'
 import {parsePluginsIndexByLocal, parseReadmeLink} from '../../helper/pluginsIndex.js'
 import {getPluginIconPath, parseShowInMenu} from '../../utils/pluginUtils.js'
 import {serializeGuobaSchemas} from '../../utils/schemaCompat.js'
+import {
+  getPluginInstallRejectReason,
+  getPluginNameFromLink as parsePluginNameFromLink,
+} from './pluginInstallSecurity.js'
 
 export default class IPluginService extends Service {
   constructor(app) {
@@ -415,6 +419,10 @@ export default class IPluginService extends Service {
   async installPlugin(link, autoRestart, autoNpmInstall, packageManager = 'pnpm') {
     await this.initBotMethods();
     link = String(link || '').trim()
+    const rejectReason = getPluginInstallRejectReason(link, cfg.get('base.gitInstallWhitelist'))
+    if (rejectReason) {
+      return {logs: [], status: 'error', message: rejectReason};
+    }
     const name = this.getPluginNameFromLink(link)
     if (!name) {
       return {logs: [], status: 'error', message: '插件链接不合法'};
@@ -428,7 +436,7 @@ export default class IPluginService extends Service {
 
     const cloneUrl = applyGithubProxy(link)
 
-    let result = await this.execFileCommand('git', ['clone', '--depth', '1', '--single-branch', cloneUrl, pluginPath]);
+    let result = await this.execFileCommand('git', ['clone', '--depth', '1', '--single-branch', '--', cloneUrl, pluginPath]);
     logs.push(this.formatExecLog('克隆插件', result))
 
     if (result.error) {
@@ -538,26 +546,7 @@ export default class IPluginService extends Service {
   }
 
   getPluginNameFromLink(link) {
-    const text = String(link || '').trim()
-    if (!text) {
-      return ''
-    }
-    let name = ''
-    if (/^git@[a-z0-9.-]+:[a-z0-9._~/-]+(?:\.git)?$/i.test(text)) {
-      name = text.split('/').pop()
-    } else {
-      try {
-        const url = new URL(text)
-        if (!['http:', 'https:', 'ssh:', 'git:'].includes(url.protocol)) {
-          return ''
-        }
-        name = url.pathname.split('/').filter(Boolean).pop()
-      } catch {
-        return ''
-      }
-    }
-    name = String(name || '').replace(/\.git$/i, '')
-    return this.isSafePluginName(name) ? name : ''
+    return parsePluginNameFromLink(link)
   }
 
   isSafePluginName(name) {

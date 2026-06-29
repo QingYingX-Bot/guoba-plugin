@@ -34,13 +34,13 @@ export class LoginController extends ApiController {
   }
 
   async logout(req) {
-    let {token} = req.body
+    let {token} = req.body || {}
     this.loginService.logout(token)
     return Result.ok('注销成功')
   }
 
   async quickLogin(req) {
-    let {code} = req.body
+    let {code} = req.body || {}
     await this.loginService.assertLoginAllowed(req, 'quick')
     try {
       const result = await this.loginService.getQuickLogin(code)
@@ -90,7 +90,7 @@ export class LoginController extends ApiController {
   }
 
   async codeLoginCheck(req) {
-    let {code} = req.body
+    let {code} = req.body || {}
     code = typeof code === 'string' ? code.trim() : code
     await this.loginService.assertLoginAllowed(req, 'code')
     const token = await this.loginService.codeLoginCheck(code)

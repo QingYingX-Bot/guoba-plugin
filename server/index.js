@@ -8,6 +8,11 @@ import chalk from 'chalk'
 
 const {mountRoot, mountRootWithSlash} = cfg.serverMountPath
 const realRoot = _paths.server.realMountPrefix + '/'
+const ROBOTS_TXT = [
+  'User-agent: *',
+  'Disallow: /',
+  '',
+].join('\n')
 
 export async function createServer({isInit}) {
   const begin = Date.now()
@@ -91,6 +96,7 @@ export async function createServer({isInit}) {
 
 function appCreated(guobaApp) {
   const {app} = guobaApp
+  app.use(applyIndexingGuards)
   // 重定向根路径，用于自定义挂载路径路径
   app.use((req, res, next) => {
 
@@ -115,4 +121,43 @@ function appCreated(guobaApp) {
     }
     next()
   })
+}
+
+function applyIndexingGuards(req, res, next) {
+  const requestPath = getRequestPath(req)
+  if (isPanelPath(requestPath)) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+  }
+  if (isRobotsPath(requestPath)) {
+    res.type('text/plain')
+    res.setHeader('Cache-Control', 'no-store')
+    res.send(ROBOTS_TXT)
+    return
+  }
+  next()
+}
+
+function getRequestPath(req) {
+  try {
+    return new URL(req.originalUrl || req.url || '/', 'http://guoba.local').pathname
+  } catch {
+    return req.path || '/'
+  }
+}
+
+function isPanelPath(requestPath) {
+  if (requestPath === _paths.server.realMountPrefix || requestPath.startsWith(realRoot)) {
+    return true
+  }
+  if (mountRoot === '/') {
+    return true
+  }
+  return requestPath === mountRoot || requestPath.startsWith(mountRootWithSlash)
+}
+
+function isRobotsPath(requestPath) {
+  if (requestPath === '/robots.txt' || requestPath === `${realRoot}robots.txt`) {
+    return true
+  }
+  return requestPath === `${mountRootWithSlash}robots.txt`
 }

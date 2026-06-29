@@ -1,5 +1,6 @@
 import express from "express";
-import multer from 'multer'
+
+const REQUEST_BODY_LIMIT = '5mb'
 
 /**
  * 一些辅助工具
@@ -16,13 +17,8 @@ export function useHelper(guobaApp) {
   }
   // parse application/json
   app.use(prefix, markBodyAlreadyParsed)
-  app.use(prefix, express.json({limit: '50mb'}))
-  app.use(prefix, express.urlencoded({limit: '50mb', extended: true}))
-  // 上传文件
-  const upload = multer({dest: 'data/upload_tmp/'})
-  app.post(joinPrefixPath(prefix, '*splat'), upload.any(), function (req, res, next) {
-    next()
-  })
+  app.use(prefix, express.json({limit: REQUEST_BODY_LIMIT}))
+  app.use(prefix, express.urlencoded({limit: REQUEST_BODY_LIMIT, extended: true}))
 }
 
 function useJsonBigIntReplacer(app) {
@@ -54,8 +50,4 @@ function normalizePrefix(prefix) {
     prefix = '/' + prefix
   }
   return prefix.length > 1 && prefix.endsWith('/') ? prefix.slice(0, -1) : prefix
-}
-
-function joinPrefixPath(prefix, routePath) {
-  return prefix === '/' ? routePath : `${prefix}/${routePath}`
 }

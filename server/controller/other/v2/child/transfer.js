@@ -117,8 +117,8 @@ function doGitClone ({ installMode, gitAddress, installPath }) {
     }
     log(`正在通过${gitAddress}克隆仓库……`)
     mkdirSync(installPath)
-    let cmd = `git clone --depth=1 -b main ${repoURL} "${installPath}"`
-    childIns.git = child.exec(cmd, {}, (error, stdout, stderr) => {
+    const args = ['clone', '--depth', '1', '-b', 'main', '--', repoURL, installPath]
+    childIns.git = child.execFile('git', args, {}, (error, stdout, stderr) => {
       if (error) {
         let tip = '仓库克隆失败，'
         if (/unable to access/.test(error.message)) {

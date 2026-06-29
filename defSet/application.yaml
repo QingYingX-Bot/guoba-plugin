@@ -9,6 +9,12 @@ base:
   githubReverseProxy: false
   # Github反代地址
   githubProxyUrl: ""
+  # Git 安装白名单，只允许从这些域名安装插件
+  gitInstallWhitelist:
+    - github.com
+    - gitee.com
+    - gitlab.com
+    - gitcode.com
 # 登录配置
 login:
   # 面板显示昵称

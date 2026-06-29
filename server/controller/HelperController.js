@@ -1,6 +1,8 @@
 import net from 'net'
 import {autowired, Result} from '#guoba.framework'
-import {ApiController} from '#guoba.platform'
+import {ApiController, cfg} from '#guoba.platform'
+
+const RELEASE_TOKEN_HEADER = 'x-guoba-release-token'
 
 /**
  * 工具类Controller
@@ -19,7 +21,7 @@ export default class HelperController extends ApiController {
     // 本地尝试释放端口
     // 假设用户关闭yunzai时，没有关干净，导致端口号被异常占用
     // 此时另一方启动的锅巴可以尝试调用此接口，来关闭当前的端口占用
-    // 安全性：仅限 localhost 访问
+    // 安全性：仅限 localhost 访问，并校验本地配置密钥
     this.delete('/release_port', this.tryReleasePort)
   }
 
@@ -28,7 +30,7 @@ export default class HelperController extends ApiController {
   }
 
   tryReleasePort(req) {
-    if (!isLoopbackRequest(req)) {
+    if (!isLoopbackRequest(req) || !isValidReleaseToken(req)) {
       return Result.noAuth()
     }
     logger.mark('[Guoba] 服务已在另一处启动，正在尝试停止当前服务……')
@@ -46,11 +48,15 @@ export default class HelperController extends ApiController {
   }
 }
 
+function isValidReleaseToken(req) {
+  const token = String(req.headers?.[RELEASE_TOKEN_HEADER] || '').trim()
+  return !!token && token === cfg.getJwtSecret()
+}
+
 function isLoopbackRequest(req) {
   const addresses = [
     req.socket?.remoteAddress,
     req.connection?.remoteAddress,
-    req.ip,
   ].filter(Boolean)
   return addresses.some(isLoopbackAddress)
 }

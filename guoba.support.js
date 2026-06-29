@@ -85,6 +85,16 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'base.gitInstallWhitelist',
+          label: 'Git安装白名单',
+          helpMessage: '插件安装只允许从白名单域名拉取仓库',
+          bottomHelpMessage: '每行一个域名，例如：github.com',
+          component: 'InputTextArea',
+          componentProps: {
+            placeholder: '每行一个域名，例如：\ngithub.com\ngitee.com'
+          }
+        },
+        {
           label: '登录配置',
           component: 'SOFT_GROUP_BEGIN'
         },
@@ -267,6 +277,10 @@ export function supportGuoba () {
         if (Array.isArray(host)) {
           lodash.set(config, 'server.host', host[0])
         }
+        let whitelist = lodash.get(config, 'base.gitInstallWhitelist')
+        if (Array.isArray(whitelist)) {
+          lodash.set(config, 'base.gitInstallWhitelist', whitelist.join('\n'))
+        }
         return config
       },
       // 设置配置的方法（前端点确定后调用的方法）
@@ -287,6 +301,9 @@ export function supportGuoba () {
               host[0] = value
               value = host
             }
+          }
+          if (keyPath === 'base.gitInstallWhitelist' && typeof value === 'string') {
+            value = value.split(/\r?\n/).map(item => item.trim()).filter(Boolean)
           }
           lodash.set(config, keyPath, value)
         }

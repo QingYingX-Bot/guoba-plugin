@@ -101,8 +101,14 @@ function normalizeCertPath(filePath) {
 async function releasePort(port) {
   const urlPath = `${_paths.server.realMountPrefix}/api/helper/release_port`
   const httpsAgent = new https.Agent({rejectUnauthorized: false})
+  const options = {
+    method: 'DELETE',
+    headers: {
+      'X-Guoba-Release-Token': cfg.getJwtSecret(),
+    },
+  }
   await Promise.any([
-    fetch(`http://localhost:${port}${urlPath}`, {method: 'DELETE'}),
-    fetch(`https://localhost:${port}${urlPath}`, {method: 'DELETE', agent: httpsAgent}),
+    fetch(`http://localhost:${port}${urlPath}`, options),
+    fetch(`https://localhost:${port}${urlPath}`, {...options, agent: httpsAgent}),
   ])
 }

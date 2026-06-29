@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import {exec} from 'child_process'
+import {execFile} from 'child_process'
 import {cfg} from '#guoba.platform'
 
 /**
@@ -110,7 +110,7 @@ export default class GitTools {
     if (!gitIsExist) {
       return GitTools.CHECK_STATUS.NOT_MATCH
     }
-    const res = await this.exec(`git -C "${this.directory}" remote -v`)
+    const res = await this.exec('git', ['-C', this.directory, 'remote', '-v'])
     if (res.error) {
       throw new Error(res.stderr)
     }
@@ -140,7 +140,8 @@ export default class GitTools {
 
     let res = await this.execSingle(
       'cloneRepo',
-      `git clone --single-branch --depth=1 "${repositoryUrl}" "${this.directory}"`
+      'git',
+      ['clone', '--single-branch', '--depth', '1', '--', repositoryUrl, this.directory]
     );
 
     let status = res.error 
@@ -162,7 +163,8 @@ export default class GitTools {
 
       res = await this.execSingle(
         'cloneRepo_fallback',
-        `git clone --single-branch --depth=1 "${repositoryUrl}" "${this.directory}"`
+        'git',
+        ['clone', '--single-branch', '--depth', '1', '--', repositoryUrl, this.directory]
       );
       
       status = res.error 
@@ -177,7 +179,7 @@ export default class GitTools {
    * 重置仓库，一般用于强制更新
    */
   async reset() {
-    const res = await this.execSingle('reset', `git -C "${this.directory}" reset --hard`)
+    const res = await this.execSingle('reset', 'git', ['-C', this.directory, 'reset', '--hard'])
     if (res.error) {
       return {
         ...res,
@@ -191,7 +193,7 @@ export default class GitTools {
   }
 
   async pull() {
-    let res = await this.execSingle('pull', `git -C "${this.directory}" pull`)
+    let res = await this.execSingle('pull', 'git', ['-C', this.directory, 'pull'])
     let status = GitTools.PULL_STATUS.UP_TO_DATE;
 
     if (res.error) {
@@ -205,9 +207,9 @@ export default class GitTools {
       this.repository = this.options.fallbackUrl;
       
       // 修改本地仓库的 remote url 指向 GitHub
-      await this.exec(`git -C "${this.directory}" remote set-url origin "${this.repository}"`);
+      await this.exec('git', ['-C', this.directory, 'remote', 'set-url', 'origin', this.repository]);
       
-      res = await this.execSingle('pull_fallback', `git -C "${this.directory}" pull`);
+      res = await this.execSingle('pull_fallback', 'git', ['-C', this.directory, 'pull']);
       
       if (res.error) {
         status = res.stderr?.includes('[因需要账号验证已自动跳过]') ? GitTools.STATUS.AUTH_ERROR : GitTools.STATUS.ERROR;
@@ -222,24 +224,25 @@ export default class GitTools {
   /**
    * 执行单例任务
    * @param key
-   * @param cmd
+   * @param file
+   * @param args
    */
-  async execSingle(key, cmd) {
+  async execSingle(key, file, args = []) {
     let cacheKey = `execSingle_${key}`
     if (this[cacheKey]) {
       // console.log(`${key} 存在任务，等待任务完成`)
       return this[cacheKey]
     }
-    this[cacheKey] = this.exec(cmd)
+    this[cacheKey] = this.exec(file, args)
     const res = await this[cacheKey]
     this[cacheKey] = null
     return res
   }
 
-  exec(cmd) {
+  exec(file, args = []) {
     const beginTime = Date.now()
     return new Promise((resolve) => {
-      exec(`${cmd}`, {
+      execFile(file, args, {
         windowsHide: true,
         // 添加 env 环境变量，强制 Git 不要弹出账号密码输入提示
         env: {
@@ -268,4 +271,3 @@ export default class GitTools {
   }
 
 }
-
