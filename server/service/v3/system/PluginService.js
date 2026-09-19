@@ -9,6 +9,7 @@ export default class PluginService extends IPluginService {
     this.exclude = [
       'example',
       'genshin',
+      'Mys-plugin',
       'other',
       'system',
     ]

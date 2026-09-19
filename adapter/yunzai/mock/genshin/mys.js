@@ -34,5 +34,5 @@ function log() {
     return
   }
   logged = true
-  logger.warn('[Guoba] 由于没有安装 genshin 插件，所以无法使用相关功能')
+  logger.warn('[Guoba] 未检测到原神插件（genshin / Mys-plugin），相关功能不可用')
 }

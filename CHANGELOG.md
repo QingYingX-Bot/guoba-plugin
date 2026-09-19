@@ -1,5 +1,13 @@
 # 更新日志
 
+## Unreleased
+
+- 原神插件兼容 `genshin` 与 `Mys-plugin` 两种目录名：优先使用 `genshin`，缺失时自动回落到 `Mys-plugin`。
+- `adapter/yunzai/version.js` 新增 `genshinPluginDirs`、`genshinPluginName` 导出；`hasGenshin` 语义调整为“存在任一原神插件目录”。
+- 原神米游社模块加载失败时不再中断插件，改为降级到 mock 并输出明确报错。
+- 锅巴「原神配置」页签的配置文件路径同时兼容 `/plugins/genshin/config/**` 与 `/plugins/Mys-plugin/config/**`。
+- 插件管理排除列表补充 `Mys-plugin`。
+
 ## 1.0.18 - 2026-06-29
 
 - 修复登录参数类型校验缺失导致异常令牌签发的风险。

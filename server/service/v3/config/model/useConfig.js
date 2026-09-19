@@ -1,6 +1,6 @@
 // todo adapter
 import loader from '../../../../../../../lib/plugins/loader.js'
-import {hasGenshin, isTRSS} from '#guoba.adapter'
+import {genshinPluginDirs, hasGenshin, isTRSS} from '#guoba.adapter'
 
 const CfgAdapter = await (() => {
   if (isTRSS) {
@@ -764,6 +764,23 @@ export function getConfigTabs() {
   return tabs
 }
 
+// 原神插件目录，已安装的目录优先，同时保留两种目录名的兜底路径
+const genshinPluginDirList = [
+  ...genshinPluginDirs,
+  ...['genshin', 'Mys-plugin'].filter((dir) => !genshinPluginDirs.includes(dir)),
+]
+
+/**
+ * 生成原神插件配置文件的候选路径
+ * 兼容旧版 genshin 与新版 Mys-plugin 两种目录名
+ */
+function genshinConfigPaths(fileName) {
+  return genshinPluginDirList.flatMap((dir) => [
+    `/plugins/${dir}/config/config/${fileName}`,
+    `/plugins/${dir}/config/${fileName}`,
+  ])
+}
+
 export const configFile = {
   'system.bot': '/config/config/bot.yaml',
   'system.group': '/config/config/group.yaml',
@@ -775,20 +792,8 @@ export const configFile = {
   'system.milky': '/config/config/milky.yaml',
   'system.satori': '/config/config/satori.yaml',
 
-  'genshin.gacha': [
-    '/plugins/genshin/config/config/gacha.set.yaml',
-    '/plugins/genshin/config/gacha.set.yaml',
-  ],
-  'genshin.mys.pubCk': [
-    '/plugins/genshin/config/config/mys.pubCk.yaml',
-    '/plugins/genshin/config/mys.pubCk.yaml',
-  ],
-  'genshin.mys.set': [
-    '/plugins/genshin/config/config/mys.set.yaml',
-    '/plugins/genshin/config/mys.set.yaml',
-  ],
-  'genshin.role.name': [
-    '/plugins/genshin/config/config/role.name.yaml',
-    '/plugins/genshin/config/role.name.yaml',
-  ],
+  'genshin.gacha': genshinConfigPaths('gacha.set.yaml'),
+  'genshin.mys.pubCk': genshinConfigPaths('mys.pubCk.yaml'),
+  'genshin.mys.set': genshinConfigPaths('mys.set.yaml'),
+  'genshin.role.name': genshinConfigPaths('role.name.yaml'),
 }

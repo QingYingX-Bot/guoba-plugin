@@ -2,6 +2,9 @@ import fs from 'fs'
 
 export const yunzaiPackage = JSON.parse(fs.readFileSync('./package.json', 'utf8'))
 
+// 原神插件目录候选，按优先级排序：旧版为 genshin，新版为 Mys-plugin
+const GENSHIN_PLUGIN_CANDIDATES = ['genshin', 'Mys-plugin']
+
 // 检查yunzai版本
 export const {
   isV2,
@@ -11,6 +14,8 @@ export const {
   noSupport,
   yunzaiVersion,
 
+  genshinPluginDirs,
+  genshinPluginName,
   hasGenshin,
 } = checkVersion()
 
@@ -36,8 +41,12 @@ function checkVersion() {
 
   const isTRSS = yunzaiPackage.name === 'trss-yunzai'
 
-  // v4 need check genshin
-  const hasGenshin = fs.existsSync('./plugins/genshin')
+  // 实际存在的原神插件目录，可能同时存在，此时按候选顺序优先
+  const genshinPluginDirs = GENSHIN_PLUGIN_CANDIDATES.filter((dir) => fs.existsSync(`./plugins/${dir}`))
+  // 优先使用的原神插件目录名，没有则为 null
+  const genshinPluginName = genshinPluginDirs[0] ?? null
+  // 是否存在原神插件（兼容 genshin / Mys-plugin 两种目录名）
+  const hasGenshin = genshinPluginDirs.length > 0
 
   return {
     isV2,
@@ -47,6 +56,8 @@ function checkVersion() {
     isTRSS,
     yunzaiVersion: version,
 
+    genshinPluginDirs,
+    genshinPluginName,
     hasGenshin,
   }
 }

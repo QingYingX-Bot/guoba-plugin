@@ -80,6 +80,15 @@ Do not restore removed legacy features:
 
 Yunzai itself provides broad automatic update support through `plugins/other/update.js` and `bot.update_time` / `bot.update_cron`; Guoba only keeps manual update commands.
 
+## Genshin / Mys-plugin Compatibility
+
+The 原神 plugin directory is either `plugins/genshin` (legacy) or `plugins/Mys-plugin` (new); both share the same internal layout (`model/mys/*`, `config/config/*.yaml`). Guoba must support both at the same time:
+
+- `adapter/yunzai/version.js` is the single source of truth: `genshinPluginDirs` (existing dirs, ordered `genshin` first), `genshinPluginName`, `hasGenshin` (true when either exists).
+- `adapter/yunzai/v3.js` iterates `genshinPluginDirs` and imports `model/mys/mysInfo.js` / `MysUser.js`, falling back to the next candidate and finally to `mock/genshin/mys.js`. Never hardcode a single plugin dir here.
+- `server/service/v3/config/model/useConfig.js` builds 原神 config paths from `genshinPluginDirs` via `genshinConfigPaths()`; add new 原神 config keys through that helper instead of hardcoding `/plugins/genshin/...`.
+- When touching 原神 integration, verify all of: only `genshin`, only `Mys-plugin`, both present (genshin wins), stale `genshin` dir without `model/mys`, and neither present (mock fallback).
+
 ## Verification
 
 For backend-only changes, prefer targeted syntax checks:
