@@ -2,7 +2,7 @@ import os from 'os'
 import jwt from 'jsonwebtoken'
 import {_version, ApiController, cfg, Constant} from '#guoba.platform'
 import {autowired, Result} from '#guoba.framework'
-import {isTRSS, isV2, isV3, isV4, yunzaiVersion} from '#guoba.adapter'
+import {frameworkName, isV2, isV3, isV4, yunzaiVersion} from '#guoba.adapter'
 
 /**
  * 首页相关查询
@@ -105,7 +105,7 @@ export class HomeController extends ApiController {
         groupCount,
       },
       env: {
-        botMode: isTRSS ? 'TRSS' : 'Yunzai',
+        botMode: frameworkName,
         guobaVersion: _version,
         nodeVersion: process.version,
         runtime: isV4 ? 'v4' : isV3 ? 'v3' : isV2 ? 'v2' : 'unknown',

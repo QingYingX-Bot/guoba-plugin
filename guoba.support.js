@@ -175,7 +175,7 @@ export function supportGuoba () {
           field: 'server.port',
           label: '监听端口号',
           helpMessage: '修改后需要重启才能生效',
-          bottomHelpMessage: '如果不想要端口号，请输入 80。注意：开启下方「与 TRSS 共享端口」时本端口不生效，锅巴会复用 TRSS 主端口',
+          bottomHelpMessage: '如果不想要端口号，请输入 80。注意：开启下方「与主框架共享端口」时本端口不生效，锅巴会复用主框架端口',
           component: 'InputNumber',
           required: true,
           componentProps: {
@@ -186,9 +186,9 @@ export function supportGuoba () {
         },
         {
           field: 'server.helloTRSS',
-          label: '与 TRSS 共享端口',
+          label: '与主框架共享端口',
           helpMessage: '修改后需要重启才能生效',
-          bottomHelpMessage: '开启后锅巴不再独立监听端口，而是挂载到 TRSS 主服务（默认 2536）的 /guoba 路径下',
+          bottomHelpMessage: '开启后锅巴不再独立监听端口，而是挂载到主框架（TRSS / JiuLi）主服务（默认 2536）的 /guoba 路径下',
           component: 'Switch'
         },
         {
@@ -199,7 +199,7 @@ export function supportGuoba () {
           field: 'server.ssl.enable',
           label: '启用 HTTPS',
           helpMessage: '修改后需要重启才能生效',
-          bottomHelpMessage: '开启后锅巴将使用 HTTPS 监听；如果开启了“与 TRSS 共享端口”，请在 TRSS 或反向代理中配置 HTTPS',
+          bottomHelpMessage: '开启后锅巴将使用 HTTPS 监听；如果开启了“与主框架共享端口”，请在主框架或反向代理中配置 HTTPS',
           component: 'Switch'
         },
         {

@@ -49,8 +49,8 @@ function checkVersion() {
   // 注意：isTRSS 仍只认 trss-yunzai，避免误用 TRSS 专属配置模型。
   const isTRSSLike = isTRSS || isJiuLi
 
-  // 框架展示名（日志用）—— 别写死 TRSS，JiuLi 等框架同样走这条链路
-  const frameworkName = isTRSS ? 'TRSS' : isJiuLi ? 'JiuLi' : (yunzaiPackage.name || 'Yunzai')
+  // 框架展示名（日志 / 运行模式展示用）—— 别写死 TRSS，JiuLi 等框架同样走这条链路
+  const frameworkName = isTRSS ? 'TRSS' : isJiuLi ? 'JiuLi' : 'Yunzai'
 
   // 实际存在的原神插件目录，可能同时存在，此时按候选顺序优先
   const genshinPluginDirs = GENSHIN_PLUGIN_CANDIDATES.filter((dir) => fs.existsSync(`./plugins/${dir}`))
