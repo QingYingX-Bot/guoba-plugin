@@ -12,6 +12,7 @@ export const {
   isV4,
   isTRSS,
   isTRSSLike,
+  frameworkName,
   noSupport,
   yunzaiVersion,
 
@@ -41,11 +42,15 @@ function checkVersion() {
   }
 
   const isTRSS = yunzaiPackage.name === 'trss-yunzai'
+  const isJiuLi = yunzaiPackage.name === 'jiuli'
 
   // JiuLi（玖璃）等 TRSS 兼容框架：同样暴露 Bot.express / Bot.server（含 skip_auth / quiet），
-  // 并提供 lib/config/config.js 兼容层，因此可复用「与 TRSS 共享端口」能力。
+  // 并提供 lib/config/config.js 兼容层，因此可复用「共享端口」能力。
   // 注意：isTRSS 仍只认 trss-yunzai，避免误用 TRSS 专属配置模型。
-  const isTRSSLike = isTRSS || yunzaiPackage.name === 'jiuli'
+  const isTRSSLike = isTRSS || isJiuLi
+
+  // 框架展示名（日志用）—— 别写死 TRSS，JiuLi 等框架同样走这条链路
+  const frameworkName = isTRSS ? 'TRSS' : isJiuLi ? 'JiuLi' : (yunzaiPackage.name || 'Yunzai')
 
   // 实际存在的原神插件目录，可能同时存在，此时按候选顺序优先
   const genshinPluginDirs = GENSHIN_PLUGIN_CANDIDATES.filter((dir) => fs.existsSync(`./plugins/${dir}`))
@@ -61,6 +66,7 @@ function checkVersion() {
     noSupport,
     isTRSS,
     isTRSSLike,
+    frameworkName,
     yunzaiVersion: version,
 
     genshinPluginDirs,

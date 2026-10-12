@@ -94,7 +94,7 @@ class GuobaConfig {
     let {mountPrefix, helloTRSS} = this.get('server')
     mountPrefix = mountPrefix ? mountPrefix : '/'
 
-    // 集成trss下默认前缀为 /guoba
+    // 与框架共享端口时默认前缀为 /guoba（TRSS / JiuLi 等）
     if (isTRSSLike && helloTRSS && mountPrefix === '/') {
       mountPrefix = "/guoba"
     }

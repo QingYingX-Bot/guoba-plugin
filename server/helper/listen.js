@@ -5,7 +5,7 @@ import https from 'https'
 import path from 'path'
 import {sleep} from '#guoba.utils'
 import {_paths, cfg} from '#guoba.platform'
-import {isTRSSLike} from '#guoba.adapter'
+import {isTRSSLike, frameworkName} from '#guoba.adapter'
 
 export function listen(app, port) {
   return new Promise((resolve, reject) => {
@@ -55,7 +55,7 @@ function createServer(app) {
   }
 
   if (isTRSSLike && cfg.get('server.helloTRSS')) {
-    logger.warn('[Guoba] 当前与 TRSS 共享端口，server.ssl.enable 不会生效；请在 TRSS 或反向代理中配置 HTTPS。')
+    logger.warn(`[Guoba] 当前与 ${frameworkName} 共享端口，server.ssl.enable 不会生效；请在 ${frameworkName} 或反向代理中配置 HTTPS。`)
     return http.createServer(app)
   }
 
