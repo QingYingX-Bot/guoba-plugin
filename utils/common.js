@@ -6,7 +6,7 @@ import moment from 'moment'
 import lodash from 'lodash'
 import fetch from 'node-fetch'
 import {cfg, Constant} from "#guoba.platform"
-import {isV3, isV4, isTRSS} from '#guoba.adapter'
+import {isV3, isV4, isTRSSLike} from '#guoba.adapter'
 
 /**
  * 随机生成指定长度的字符串
@@ -130,7 +130,7 @@ export async function getAllWebAddress() {
   let host = cfg.serverHost
   const port = getServerPort(splicePort)
   let custom = []
-  if (isTRSS && helloTRSS) {
+  if (isTRSSLike && helloTRSS) {
     const server = (await import('../../../lib/config/config.js')).default.server
     if (server.url)
       custom.push(server.url)
@@ -214,7 +214,7 @@ function getAutoIps(port, allIp) {
 
 function getServerProtocol() {
   const {helloTRSS, ssl} = cfg.get('server')
-  if (isTRSS && helloTRSS) {
+  if (isTRSSLike && helloTRSS) {
     return 'http'
   }
   return ssl?.enable ? 'https' : 'http'

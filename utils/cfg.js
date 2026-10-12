@@ -3,7 +3,7 @@ import path from 'path'
 import lodash from 'lodash'
 import {YamlReader} from '#guoba.framework'
 import {_paths} from '#guoba.platform'
-import {isTRSS} from '#guoba.adapter'
+import {isTRSSLike} from '#guoba.adapter'
 import {randomString} from '#guoba.utils'
 
 /** 配置文件 */
@@ -80,7 +80,7 @@ class GuobaConfig {
 
   get serverPort() {
     const {port, helloTRSS} = this.get('server')
-    if (isTRSS && helloTRSS) {
+    if (isTRSSLike && helloTRSS) {
       return this.trssCfg.server.port
     }
     return port
@@ -95,7 +95,7 @@ class GuobaConfig {
     mountPrefix = mountPrefix ? mountPrefix : '/'
 
     // 集成trss下默认前缀为 /guoba
-    if (isTRSS && helloTRSS && mountPrefix === '/') {
+    if (isTRSSLike && helloTRSS && mountPrefix === '/') {
       mountPrefix = "/guoba"
     }
 
@@ -133,7 +133,7 @@ class GuobaConfig {
 
 const options = {}
 
-if (isTRSS) {
+if (isTRSSLike) {
   options['trssCfg'] = (await import('../../../lib/config/config.js')).default
 }
 
